@@ -3,6 +3,7 @@
 // які містять файли (наприклад, зображення чи документи).
 
 import { v2 as cloudinary } from "cloudinary";
+import productModel from "../models/productModel.js"; // .js то піздєц як важливо!!! інакше не розуміє що за файд, то тобі не реакт))
 
 // func for add product
 const addProduct = async (req, res) => {
@@ -38,6 +39,25 @@ const addProduct = async (req, res) => {
       })
     );
 
+    // Promise.all — це метод, який дозволяє обробляти кілька обіцянок одночасно.
+    // Він приймає масив обіцянок і повертає новий Promise, який виконається, коли всі обіцянки у масиві завершаться.
+
+    const productData = {
+      name,
+      description,
+      price: Number(price),
+      category,
+      subCategory,
+      sizes: JSON.parse(sizes), // переробляє із стрінги в масив, розпарсив)
+      bestseller: bestseller === "true" ? true : false,
+      image: imagesUrl,
+      date: Date.now(),
+    };
+
+    console.log(productData, "productData");
+    const product = new productModel(productData); // те з чим монго вміє працювати
+    await product.save();
+
     console.log(
       name,
       description,
@@ -52,7 +72,7 @@ const addProduct = async (req, res) => {
     console.log(images, "images");
     console.log(imagesUrl, "imagesUrl");
 
-    res.json({}); //  сервер успішно обробив запит, але не має даних для передачі клієнту, тому {}.
+    res.json({ success: true, message: "Product added!" }); // {} -- сервер успішно обробив запит, але не має даних для передачі клієнту, тому {}.
   } catch (error) {
     console.log(error);
     res.json({ success: false, message: error.message });
@@ -60,14 +80,39 @@ const addProduct = async (req, res) => {
 };
 
 // func for list products
-const listProducts = async (req, res) => {};
+const listProducts = async (req, res) => {
+  try {
+    const products = await productModel.find({});
+    res.json({ success: true, products });
+  } catch (error) {
+    console.log(error);
+    res.json({ success: false, message: error.message });
+  }
+};
 
 // func for remove product
 
-const removeProduct = async (req, res) => {};
+const removeProduct = async (req, res) => {
+  try {
+    await productModel.findByIdAndDelete(req.body.id);
+    res.json({ success: true, message: "Product removed!" });
+  } catch (error) {
+    console.log(error);
+    res.json({ success: false, message: error.message });
+  }
+};
 
 // func for single product info
 
-const singleProduct = (req, res) => {};
+const singleProduct = async (req, res) => {
+  try {
+    const { productId } = req.body;
+    const product = await productModel.findById(productId);
+    res.json({ success: true, product });
+  } catch (error) {
+    console.log(error);
+    res.json({ success: false, message: error.message });
+  }
+};
 
 export { addProduct, listProducts, removeProduct, singleProduct };
