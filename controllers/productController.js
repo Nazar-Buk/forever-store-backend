@@ -18,14 +18,22 @@ const addProduct = async (req, res) => {
       bestseller,
     } = req.body;
 
-    const image1 = req.files.image1 && req.files.image1[0];
-    const image2 = req.files.image2 && req.files.image2[0];
-    const image3 = req.files.image3 && req.files.image3[0];
-    const image4 = req.files.image4 && req.files.image4[0];
+    // const image1 = req.files.image1 && req.files.image1[0];
+    // const image2 = req.files.image2 && req.files.image2[0];
+    // const image3 = req.files.image3 && req.files.image3[0];
+    // const image4 = req.files.image4 && req.files.image4[0];
+    console.log("lalallalalalallalalal");
+    // console.log(image1, "image1");
+    console.log(req.files, "req.files");
 
-    const images = [image1, image2, image3, image4].filter(
-      (item) => item !== undefined
-    ); // у випадку коли я хочу відправити лише 2 картинки замість 4ох (а я поставив максимум 4 картинки), то ті що не відправляються будуть undefined, тепер ми їх відсіяли)
+    // const images = [image1, image2, image3, image4].filter(
+    //   (item) => item !== undefined
+    // ); // у випадку коли я хочу відправити лише 2 картинки замість 4ох (а я поставив максимум 4 картинки), то ті що не відправляються будуть undefined, тепер ми їх відсіяли)
+
+    // const images = Object.keys(req.files).map((key) => req.files[key][0]);
+    const images = req.files;
+
+    console.log(images, "images222");
 
     let imagesUrl = await Promise.all(
       images.map(async (item) => {
@@ -69,8 +77,8 @@ const addProduct = async (req, res) => {
       "description"
     );
     // console.log(image1, image2, image3, image4, "images");
-    console.log(images, "images");
-    console.log(imagesUrl, "imagesUrl");
+    // console.log(images, "images");
+    // console.log(imagesUrl, "imagesUrl");
 
     res.json({ success: true, message: "Product added!" }); // {} -- сервер успішно обробив запит, але не має даних для передачі клієнту, тому {}.
   } catch (error) {
