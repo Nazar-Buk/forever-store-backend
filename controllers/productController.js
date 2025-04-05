@@ -18,22 +18,7 @@ const addProduct = async (req, res) => {
       bestseller,
     } = req.body;
 
-    // const image1 = req.files.image1 && req.files.image1[0];
-    // const image2 = req.files.image2 && req.files.image2[0];
-    // const image3 = req.files.image3 && req.files.image3[0];
-    // const image4 = req.files.image4 && req.files.image4[0];
-    console.log("lalallalalalallalalal");
-    // console.log(image1, "image1");
-    console.log(req.files, "req.files");
-
-    // const images = [image1, image2, image3, image4].filter(
-    //   (item) => item !== undefined
-    // ); // у випадку коли я хочу відправити лише 2 картинки замість 4ох (а я поставив максимум 4 картинки), то ті що не відправляються будуть undefined, тепер ми їх відсіяли)
-
-    // const images = Object.keys(req.files).map((key) => req.files[key][0]);
     const images = req.files;
-
-    console.log(images, "images222");
 
     let imagesUrl = await Promise.all(
       images.map(async (item) => {
@@ -50,6 +35,12 @@ const addProduct = async (req, res) => {
     // Promise.all — це метод, який дозволяє обробляти кілька обіцянок одночасно.
     // Він приймає масив обіцянок і повертає новий Promise, який виконається, коли всі обіцянки у масиві завершаться.
 
+    /////////////////////////////////////////
+    // ✅ Promise.all() дозволяє завантажувати всі картинки одночасно.
+    // ✅ Ми чекаємо завершення всіх завантажень і отримуємо масив URL-адрес.
+    // ✅ Якби не Promise.all, то завантаження відбувалося б послідовно (повільніше).
+    // ✅ Час очікування буде таким, скільки триває завантаження найдовшої картинки.
+
     const productData = {
       name,
       description,
@@ -58,11 +49,10 @@ const addProduct = async (req, res) => {
       subCategory,
       sizes: JSON.parse(sizes), // переробляє із стрінги в масив, розпарсив)
       bestseller: bestseller === "true" ? true : false,
-      image: imagesUrl,
+      images: imagesUrl,
       date: Date.now(),
     };
 
-    console.log(productData, "productData");
     const product = new productModel(productData); // те з чим монго вміє працювати
     await product.save();
 
@@ -76,11 +66,63 @@ const addProduct = async (req, res) => {
       bestseller,
       "description"
     );
-    // console.log(image1, image2, image3, image4, "images");
-    // console.log(images, "images");
-    // console.log(imagesUrl, "imagesUrl");
 
     res.json({ success: true, message: "Product added!" }); // {} -- сервер успішно обробив запит, але не має даних для передачі клієнту, тому {}.
+  } catch (error) {
+    console.log(error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
+// update product
+const updateProduct = async (req, res) => {
+  try {
+    const { productId } = req.params;
+    const uploadedImages = req.files; // масив з файлами (картинками)
+    const updatedFields = req.body;
+
+    if (updatedFields.images === "[]") {
+      updatedFields.images = JSON.parse(updatedFields.images);
+    }
+
+    if (uploadedImages.length) {
+      let imagesUrl = await Promise.all(
+        uploadedImages.map(async (item) => {
+          let result = cloudinary.uploader.upload(item.path, {
+            resource_type: "image",
+          }); // item.path --  бо консоль лог мені показує об'єкт в котрому є ключ path, цей об'єкт і є наша завантажена картинка
+          //  cloudinary отримає шлях до картинки і закине цю картинку в хмарку
+          return (await result).secure_url; // без цього не працюватиме
+        })
+      );
+
+      if (updatedFields.images) {
+        typeof updatedFields.images === "string"
+          ? (updatedFields.images = [updatedFields.images, ...imagesUrl])
+          : (updatedFields.images = [...updatedFields.images, ...imagesUrl]);
+      } else {
+        updatedFields.images = imagesUrl;
+      }
+    }
+
+    if (updatedFields.sizes) {
+      updatedFields.sizes = JSON.parse(updatedFields.sizes);
+    }
+
+    const updatedProduct = await productModel.findByIdAndUpdate(
+      productId,
+      updatedFields,
+      { new: true }
+    );
+    productId, // ID продукту
+      updatedFields, // Оновлені дані
+      { new: true }; // Повернути оновлений документ
+
+    if (!updatedProduct) {
+      res.status(404).json({ success: false, message: "Product not found" });
+    }
+
+    res.json({ success: true, message: "Product Updated!" });
   } catch (error) {
     console.log(error);
     res.json({ success: false, message: error.message });
@@ -123,4 +165,10 @@ const singleProduct = async (req, res) => {
   }
 };
 
-export { addProduct, listProducts, removeProduct, singleProduct };
+export {
+  addProduct,
+  listProducts,
+  removeProduct,
+  singleProduct,
+  updateProduct,
+};
