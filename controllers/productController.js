@@ -20,15 +20,21 @@ const addProduct = async (req, res) => {
 
     const images = req.files;
 
-    let imagesUrl = await Promise.all(
+    let imagesData = await Promise.all(
       images.map(async (item) => {
-        let result = cloudinary.uploader.upload(item.path, {
+        let result = await cloudinary.uploader.upload(item.path, {
           resource_type: "image",
+          folder: "productsForever", // папка де зберігаються фотки на cloudinary
         }); // item.path --  бо консоль лог мені показує об'єкт в котрому є ключ path, цей об'єкт і є наша завантажена картинка
         // cloudinary отримає шлях до картинки і закине цю картинку в хмарку
 
-        return (await result).secure_url; // без цього не працюватиме
+        // return (await result).secure_url; // без цього не працюватиме
         // return result.secure_url; // це шляпа, так не працює
+
+        return {
+          url: result.secure_url,
+          public_id: result.public_id,
+        };
       })
     );
 
@@ -49,23 +55,12 @@ const addProduct = async (req, res) => {
       subCategory,
       sizes: JSON.parse(sizes), // переробляє із стрінги в масив, розпарсив)
       bestseller: bestseller === "true" ? true : false,
-      images: imagesUrl,
+      images: imagesData,
       date: Date.now(),
     };
 
     const product = new productModel(productData); // те з чим монго вміє працювати
     await product.save();
-
-    console.log(
-      name,
-      description,
-      price,
-      category,
-      subCategory,
-      sizes,
-      bestseller,
-      "description"
-    );
 
     res.json({ success: true, message: "Product added!" }); // {} -- сервер успішно обробив запит, але не має даних для передачі клієнту, тому {}.
   } catch (error) {
@@ -80,28 +75,49 @@ const updateProduct = async (req, res) => {
     const { productId } = req.params;
     const uploadedImages = req.files; // масив з файлами (картинками)
     const updatedFields = req.body;
+    const { imgForDelete } = req.query;
 
-    if (updatedFields.images === "[]") {
-      updatedFields.images = JSON.parse(updatedFields.images);
+    if (imgForDelete && imgForDelete !== "[]") {
+      const imagesToDelete = JSON.parse(imgForDelete);
+      console.log(imagesToDelete, "imagesToDelete");
+
+      // Видалити всі зображення з Cloudinary
+      await Promise.all(
+        imagesToDelete.map(async (id) => {
+          if (id) {
+            await cloudinary.uploader.destroy(id);
+          }
+        })
+      );
+    }
+
+    if (updatedFields.images) {
+      if (updatedFields.images === "[]") {
+        updatedFields.images = JSON.parse(updatedFields.images);
+      } else {
+        updatedFields.images = JSON.parse(updatedFields.images);
+      }
     }
 
     if (uploadedImages.length) {
-      let imagesUrl = await Promise.all(
+      let imagesData = await Promise.all(
         uploadedImages.map(async (item) => {
-          let result = cloudinary.uploader.upload(item.path, {
+          let result = await cloudinary.uploader.upload(item.path, {
             resource_type: "image",
+            folder: "productsForever", // productsForever папка де зберігаються фотки на cloudinary
           }); // item.path --  бо консоль лог мені показує об'єкт в котрому є ключ path, цей об'єкт і є наша завантажена картинка
           //  cloudinary отримає шлях до картинки і закине цю картинку в хмарку
-          return (await result).secure_url; // без цього не працюватиме
+          return {
+            url: result.secure_url,
+            public_id: result.public_id,
+          };
         })
       );
 
-      if (updatedFields.images) {
-        typeof updatedFields.images === "string"
-          ? (updatedFields.images = [updatedFields.images, ...imagesUrl])
-          : (updatedFields.images = [...updatedFields.images, ...imagesUrl]);
+      if (updatedFields.images.length) {
+        updatedFields.images = [...updatedFields.images, ...imagesData];
       } else {
-        updatedFields.images = imagesUrl;
+        updatedFields.images = imagesData;
       }
     }
 
@@ -114,9 +130,9 @@ const updateProduct = async (req, res) => {
       updatedFields,
       { new: true }
     );
-    productId, // ID продукту
-      updatedFields, // Оновлені дані
-      { new: true }; // Повернути оновлений документ
+    // productId, // ID продукту
+    //   updatedFields, // Оновлені дані
+    //   { new: true }; // Повернути оновлений документ
 
     if (!updatedProduct) {
       res.status(404).json({ success: false, message: "Product not found" });
@@ -144,7 +160,23 @@ const listProducts = async (req, res) => {
 
 const removeProduct = async (req, res) => {
   try {
+    const product = await productModel.findById(req.body.id);
+    console.log(product, "product");
+    if (!product) {
+      res.status(404).json({ success: false, message: "Product Not Found!" });
+    }
+
+    // Видалити всі зображення з Cloudinary
+    await Promise.all(
+      product.images.map(async (img) => {
+        if (img.public_id) {
+          await cloudinary.uploader.destroy(img.public_id);
+        }
+      })
+    );
+
     await productModel.findByIdAndDelete(req.body.id);
+
     res.json({ success: true, message: "Product removed!" });
   } catch (error) {
     console.log(error);
