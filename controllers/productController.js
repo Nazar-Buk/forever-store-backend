@@ -190,7 +190,14 @@ const singleProduct = async (req, res) => {
   try {
     const { productId } = req.body;
     const product = await productModel.findById(productId);
-    res.json({ success: true, product });
+
+    if (product) {
+      res.json({ success: true, product });
+    } else {
+      res
+        .status(404)
+        .json({ success: false, message: "404 Product Not Found!" });
+    }
   } catch (error) {
     console.log(error);
     res.json({ success: false, message: error.message });
