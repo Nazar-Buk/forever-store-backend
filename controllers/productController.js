@@ -148,8 +148,22 @@ const updateProduct = async (req, res) => {
 // func for list products
 const listProducts = async (req, res) => {
   try {
-    const products = await productModel.find({});
-    res.json({ success: true, products });
+    console.log(req.query, "req.query");
+    // отак передавати з фронта /api/product/list?page=${currentPage}&limit=${currentLimit}
+    // єбать я програміст =)
+
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit; // Обчислює skip — скільки товарів треба пропустити в базі
+
+    // Загальна кількість товарів
+    const totalCount = await productModel.countDocuments();
+
+    // Отримуємо товари з пропуском та лімітом
+    const products = await productModel.find().skip(skip).limit(limit);
+
+    // const products = await productModel.find({});
+    res.json({ success: true, products, totalCount });
   } catch (error) {
     console.log(error);
     res.json({ success: false, message: error.message });
