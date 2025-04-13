@@ -148,7 +148,7 @@ const updateProduct = async (req, res) => {
 // func for list products
 const listProducts = async (req, res) => {
   try {
-    console.log(req.query, "req.query");
+    // console.log(req.query, "req.query");
     // отак передавати з фронта /api/product/list?page=${currentPage}&limit=${currentLimit}
     // єбать я програміст =)
 
@@ -168,6 +168,82 @@ const listProducts = async (req, res) => {
     console.log(error);
     res.json({ success: false, message: error.message });
   }
+};
+
+// for get bestsellers products
+
+const bestsellersProducts = async (req, res) => {
+  try {
+    const bestsellersForSection = await productModel
+      .find({ bestseller: true })
+      .sort({
+        date: -1,
+      })
+      .limit(5);
+    // sort({createdAt: -1} -- отримаю найновіші бестселлери, .limit(5) -- тільки 5
+
+    if (!bestsellersForSection.length) {
+      return res.status(404).json({
+        success: false,
+        message: "Can't Find 'Bestsellers Products!'",
+      }); // так отримувати цю помилку на фронті --> error.response?.data?.message
+    }
+
+    res.json({ success: true, bestsellersForSection });
+  } catch (error) {
+    console.log(error, "error");
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// for get latest products
+
+const latestProducts = async (req, res) => {
+  try {
+    const latestProductsForSection = await productModel
+      .find()
+      .sort({ date: -1 })
+      .limit(10);
+
+    if (!latestProductsForSection.length) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Can't Find 'Latest Products!'" });
+    }
+
+    res.json({ success: true, latestProductsForSection });
+  } catch (error) {
+    console.log(error, "error");
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// for get related products
+
+const relatedProducts = async (req, res) => {
+  try {
+    const { category, subCategory, productId } = req.body;
+    console.log("category:", category);
+    console.log("subCategory:", subCategory);
+    console.log("productId:", productId);
+
+    const relatedProductsForSection = await productModel
+      .find({
+        category: category,
+        subCategory: subCategory,
+        _id: { $ne: productId }, // Виключити поточний продукт, типу аля "не дорівнює"
+      })
+      .sort({ date: -1 })
+      .limit(5);
+
+    if (!relatedProductsForSection.length) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Can't Find 'Related Products!'" });
+    }
+
+    res.json({ success: true, relatedProductsForSection });
+  } catch (error) {}
 };
 
 // func for remove product
@@ -224,4 +300,7 @@ export {
   removeProduct,
   singleProduct,
   updateProduct,
+  bestsellersProducts,
+  latestProducts,
+  relatedProducts,
 };

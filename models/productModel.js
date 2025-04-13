@@ -30,3 +30,10 @@ const productModel =
 // mongoose.model("product", productSchema): Якщо моделі ще немає, створюється нова модель з ім'ям product і схемою productSchema.
 
 export default productModel;
+
+// щоб дата створення і оновлення продукту додавалися автоматично
+// const productSchema = new mongoose.Schema({
+//   name: String,
+//   bestseller: Boolean,
+//   // інші поля
+// }, { timestamps: true }); // автоматично додається createdAt і updatedAt
