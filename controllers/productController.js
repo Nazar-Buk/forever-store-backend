@@ -243,7 +243,9 @@ const relatedProducts = async (req, res) => {
     }
 
     res.json({ success: true, relatedProductsForSection });
-  } catch (error) {}
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
 };
 
 // func for remove product
