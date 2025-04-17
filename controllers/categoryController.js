@@ -108,4 +108,78 @@ const removeCategory = async (req, res) => {
   }
 };
 
-export { addCategory, getCategories, removeCategory };
+// get single category
+
+const singleCategory = async (req, res) => {
+  try {
+    const { categoryId } = req.query;
+
+    const category = await categoryModel.findById(categoryId);
+
+    if (!category) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Category Not Found!" });
+    }
+
+    res.json({ success: true, category });
+  } catch (error) {
+    console.log(error, "error");
+    res.json({ success: false, message: error.message });
+  }
+};
+
+// update category and subcategory
+
+const updateCategoryAndSubCategory = async (req, res) => {
+  try {
+    const { updatedFields } = req.body;
+    const { categoryId } = req.params;
+
+    if (updatedFields.categoryLabel) {
+      updatedFields.categoryValue = slugify(updatedFields.categoryLabel);
+    }
+
+    if (updatedFields.subCategory) {
+      updatedFields.subCategory = updatedFields.subCategory.map((item) => ({
+        subCategoryLabel: item.trim(),
+        subCategoryValue: slugify(item),
+      }));
+    }
+
+    const updatedCategory = await categoryModel.findByIdAndUpdate(
+      categoryId,
+      updatedFields,
+      { new: true }
+    );
+
+    if (!updatedFields) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Updated Fields Not Found!" });
+    }
+
+    if (!updatedCategory) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Category Not Found!" });
+    }
+
+    res.json({
+      success: true,
+      message: "Category Successfully Updated!",
+      updatedCategory,
+    });
+  } catch (error) {
+    console.log(error, "error");
+    res.json({ success: false, message: error.message });
+  }
+};
+
+export {
+  addCategory,
+  getCategories,
+  removeCategory,
+  singleCategory,
+  updateCategoryAndSubCategory,
+};
