@@ -253,9 +253,11 @@ const relatedProducts = async (req, res) => {
 const removeProduct = async (req, res) => {
   try {
     const product = await productModel.findById(req.body.id);
-    console.log(product, "product");
+
     if (!product) {
-      res.status(404).json({ success: false, message: "Product Not Found!" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Product Not Found!" });
     }
 
     // Видалити всі зображення з Cloudinary

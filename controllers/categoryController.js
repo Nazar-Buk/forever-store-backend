@@ -66,4 +66,46 @@ const addCategory = async (req, res) => {
   }
 };
 
-export { addCategory };
+// get Category List
+
+const getCategories = async (req, res) => {
+  try {
+    // console.log(req.query, "req.query");
+    // отак передавати з фронта /api/product/list?page=${currentPage}&limit=${currentLimit}
+
+    const page = req.query.page || 1;
+    const limit = req.query.limit || 10;
+    const skip = (page - 1) * limit; // Обчислює skip — скільки товарів треба пропустити в базі
+
+    const totalCount = await categoryModel.countDocuments();
+
+    const categoriesList = await categoryModel.find().skip(skip).limit(limit);
+
+    res.json({ success: true, categoriesList, totalCount });
+  } catch (error) {
+    console.log(error, "error");
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// delete Category
+
+const removeCategory = async (req, res) => {
+  try {
+    const { categoryId } = req.params;
+
+    const deleteCategory = await categoryModel.findByIdAndDelete(categoryId);
+    if (!deleteCategory) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Category Not Found!" });
+    }
+
+    res.json({ success: true, message: "Category Removed!" });
+  } catch (error) {
+    console.log(error, "error");
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export { addCategory, getCategories, removeCategory };
