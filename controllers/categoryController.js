@@ -81,7 +81,9 @@ const getCategories = async (req, res) => {
 
     const categoriesList = await categoryModel.find().skip(skip).limit(limit);
 
-    res.json({ success: true, categoriesList, totalCount });
+    const allCategories = await categoryModel.find();
+
+    res.json({ success: true, categoriesList, allCategories, totalCount });
   } catch (error) {
     console.log(error, "error");
     res.status(500).json({ success: false, message: error.message });
