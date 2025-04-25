@@ -156,13 +156,71 @@ const listProducts = async (req, res) => {
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit; // Обчислює skip — скільки товарів треба пропустити в базі
 
+    const { search, sort, category, subCategory } = req.query;
+
+    // Побудова фільтра
+
+    const filter = {};
+
+    if (search?.trim()) {
+      filter.name = { $regex: search, $options: "i" };
+      // 🔹 { $regex: search, $options: "i" }
+      // Це умова пошуку, де:
+
+      // ✅ $regex: search
+      // $regex — це оператор MongoDB, який означає "пошук за регулярним виразом".
+
+      // search — це рядок, який ти хочеш знайти (наприклад, "сорочка").
+
+      // Це працює як "містить". Тобто, якщо в назві товару є слово або частина слова, що відповідає search, воно знайдеться.
+
+      // ✅ $options: "i"
+      // "i" означає "ignore case", тобто ігноруй регістр.
+
+      // Наприклад, "Сорочка" == "сорочка" == "СОРОЧКА".
+    }
+
+    if (category?.trim()) {
+      filter.category = category;
+    }
+
+    if (subCategory?.trim()) {
+      filter.subCategory = subCategory;
+    }
+
+    // Сортування
+    const sortOptions = {};
+
+    switch (sort) {
+      case "price_asc":
+        sortOptions.price = 1; // Сортує за ціною по зростанню
+        break;
+      case "price_desc":
+        sortOptions.price = -1; // Сортує за ціною по спаданню
+        break;
+      case "date_new":
+        sortOptions.date = -1; // Сортує за датою додавання (від нових до старих)
+        break;
+      case "date_old":
+        sortOptions.date = 1; // Сортує за датою додавання (від старих до нових)
+        break;
+      default:
+        sortOptions.date = -1; // Сортує за датою додавання (від нових до старих)
+    }
+
+    console.log(filter, "filter");
+    console.log(sortOptions, "sortOptions");
+
     // Загальна кількість товарів
-    const totalCount = await productModel.countDocuments();
+    const totalCount = await productModel.countDocuments(filter);
 
     // Отримуємо товари з пропуском та лімітом
-    const products = await productModel.find().skip(skip).limit(limit);
+    const products = await productModel
+      .find(filter)
+      .sort(sortOptions)
+      .skip(skip)
+      .limit(limit);
 
-    // const products = await productModel.find({});
     res.json({ success: true, products, totalCount });
   } catch (error) {
     console.log(error);
