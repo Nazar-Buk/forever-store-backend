@@ -13,8 +13,8 @@ const subCategorySchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
-  },
-  { _id: false } // не створює окремий _id для кожної підкатегорії
+  }
+  // { _id: false } // не створює окремий _id для кожної підкатегорії, зараз я це не використовую
 );
 
 const categorySchema = new mongoose.Schema(

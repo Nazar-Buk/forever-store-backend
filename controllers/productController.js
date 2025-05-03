@@ -208,9 +208,6 @@ const listProducts = async (req, res) => {
         sortOptions.date = -1; // Сортує за датою додавання (від нових до старих)
     }
 
-    console.log(filter, "filter");
-    console.log(sortOptions, "sortOptions");
-
     // Загальна кількість товарів
     const totalCount = await productModel.countDocuments(filter);
 
