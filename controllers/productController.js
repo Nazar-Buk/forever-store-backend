@@ -156,7 +156,8 @@ const listProducts = async (req, res) => {
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit; // Обчислює skip — скільки товарів треба пропустити в базі
 
-    const { search, sort, category, subCategory } = req.query;
+    const { search, sort, category, subCategory, priceFrom, priceTo } =
+      req.query;
 
     // Побудова фільтра
 
@@ -186,6 +187,14 @@ const listProducts = async (req, res) => {
 
     if (subCategory?.trim()) {
       filter.subCategory = subCategory;
+    }
+
+    if (priceFrom?.trim()) {
+      filter.price = { ...filter.price, $gte: Number(priceFrom) }; // $gte - більше або дорівнює
+    }
+
+    if (priceTo?.trim()) {
+      filter.price = { ...filter.price, $lte: Number(priceTo) }; // $lte - менше або дорівнює
     }
 
     // Сортування
