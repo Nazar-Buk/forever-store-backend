@@ -15,16 +15,27 @@ const loginUser = async (req, res) => {
     const user = await userModel.findOne({ email });
 
     if (!user) {
-      return res.json({ success: false, message: "User does not exist!" });
+      return res
+        .status(404)
+        .json({ success: false, message: "User does not exist!" });
     }
 
     const isMatch = await bcrypt.compare(password, user.password); // порівнюємо паролі
 
     if (isMatch) {
       const token = createToken(user._id);
-      res.json({ success: true, token });
+
+      res.cookie("token", token, {
+        httpOnly: true, // Забороняє доступ до куки з JavaScript (XSS захист)
+        secure: process.env.NODE_ENV === "production", // тільки по HTTPS у проді
+        sameSite: "Strict", // захист від CSRF
+        // maxAge: 7 * 24 * 60 * 60 * 1000, // кука буде жити 7 днів
+      });
+      res.status(200).json({ success: true, token });
     } else {
-      res.json({ success: false, message: "Invalid credentials!" });
+      return res
+        .status(401)
+        .json({ success: false, message: "Invalid credentials!" });
     }
   } catch (error) {
     console.log(error);
@@ -72,6 +83,12 @@ const registerUser = async (req, res) => {
     const user = await newUser.save(); // зберігаємо користувача в базу даних
 
     const token = createToken(user._id); // створюємо токен для користувача
+
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production", // 🔐 лише для продакшну
+      sameSite: "strict",
+    }); // { httpOnly: true } — опція, яка каже браузеру: "цю куку не можна читати через JavaScript".
 
     res.json({ success: true, token });
 
@@ -123,4 +140,23 @@ const adminLogin = async (req, res) => {
   }
 };
 
-export { loginUser, registerUser, adminLogin };
+// LogOut
+
+const logoutUser = async (req, res) => {
+  try {
+    res.cookie("token", "", {
+      httpOnly: true, // токен доступний лише на бекенді (безпечніше)
+      expires: new Date(0), // встановлюємо дату в минуле — кука автоматично видалиться
+    });
+
+    res.json({ success: true, message: "Logged out successfully" });
+  } catch (error) {
+    console.log(error, "error Logout");
+    res.status(500).json({
+      success: false,
+      message: "Logout failed. Please try again later.",
+    });
+  }
+};
+
+export { loginUser, registerUser, adminLogin, logoutUser };

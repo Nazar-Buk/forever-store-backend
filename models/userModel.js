@@ -6,8 +6,9 @@ const userSchema = new mongoose.Schema(
     email: { type: String, required: true, unique: true }, // unique: true -- не дозволить зробити ще один акаунт з таким же email
     password: { type: String, required: true },
     cartData: { type: Object, default: {} }, // default: {} — якщо значення не надається, за замовчуванням буде порожній об'єкт
+    role: { type: String, default: "user" },
   },
-  { minimize: false }
+  { timestamps: true, minimize: false }
 );
 
 // Що таке minimize?
