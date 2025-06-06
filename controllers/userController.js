@@ -159,4 +159,34 @@ const logoutUser = async (req, res) => {
   }
 };
 
-export { loginUser, registerUser, adminLogin, logoutUser };
+const checkAuth = (req, res) => {
+  const token = req.cookies.token;
+
+  if (!token) {
+    return res
+      .status(401)
+      .json({
+        success: false,
+        isAuthenticated: false,
+        message: "Not authenticated",
+      });
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    return res
+      .status(200)
+      .json({ success: true, isAuthenticated: true, userId: decoded.id });
+  } catch (error) {
+    console.log(error, "error");
+    return res
+      .status(401)
+      .json({
+        success: false,
+        isAuthenticated: false,
+        message: "Authentication failed",
+      });
+  }
+};
+
+export { loginUser, registerUser, adminLogin, logoutUser, checkAuth };
