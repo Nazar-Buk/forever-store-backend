@@ -18,7 +18,11 @@ import userRouter from "./routes/userRoute.js";
 import productRouter from "./routes/productRoute.js";
 import categoryRouter from "./routes/categoryRoute.js";
 
-const allowOrigins = ["http://localhost:5173", "http://localhost:5174"];
+const allowOrigins = [
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "https://forever-store-mzej.onrender.com",
+];
 
 // App config
 const app = express();
@@ -66,7 +70,7 @@ app.use("/api/product", productRouter);
 app.use("/api/category", categoryRouter);
 
 app.get("/", (req, res) => {
-  res.send("API Working");
+  res.send("API Working"); // покажеться на екрані, якщо зайти на http://localhost:4000/
 });
 
 app.listen(port, () => console.log("Server started on port : " + port));
