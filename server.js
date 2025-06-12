@@ -23,7 +23,7 @@ const allowOrigins = [
   "http://localhost:5174",
   "https://forever-store-mzej.onrender.com",
   "https://buk-com.pp.ua",
-  "https://forever-admin-frontend.onrender.com/",
+  "https://forever-admin-frontend.onrender.com",
 ];
 
 // App config
