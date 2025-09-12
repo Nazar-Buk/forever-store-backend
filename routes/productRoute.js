@@ -8,6 +8,7 @@ import {
   bestsellersProducts,
   latestProducts,
   relatedProducts,
+  getAllProducts,
 } from "../controllers/productController.js";
 import upload from "../middleware/multer.js";
 import adminAuth from "../middleware/adminAuth.js";
@@ -40,5 +41,6 @@ productRouter.patch(
   upload.any(), // робить масив з файлів,
   updateProduct
 );
+productRouter.get("/all-products", getAllProducts);
 
 export default productRouter;
