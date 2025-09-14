@@ -11,6 +11,7 @@ import "dotenv/config";
 import cookieParser from "cookie-parser"; // Для роботи з cookie
 import helmet from "helmet"; // Захист від базових атак
 import rateLimit from "express-rate-limit"; // Захист від спаму
+import Stripe from "stripe";
 
 import connectDB from "./config/mongodb.js";
 import connectCloudinary from "./config/cloudinary.js";
@@ -35,6 +36,7 @@ connectCloudinary(); // підключив cloudinary, код до неї є в 
 
 // Middlewares
 app.use(express.json());
+
 // app.use(cors()); //  так було у відео
 // app.use(cors({ origin: "http://localhost:4000", credentials: true })); // Дозволяємо запити з фронтенду
 app.use(
@@ -71,6 +73,65 @@ app.use(rateLimit({ windowMs: 15 * 60 * 100, max: 100 })); // Обмеження
 app.use("/api/user", userRouter); // /api/user/register,   /api/user/login,  /api/user/admin
 app.use("/api/product", productRouter);
 app.use("/api/category", categoryRouter);
+
+// Stripe
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
+const YOUR_DOMAIN = process.env.FRONTEND_URL;
+
+app.post("/create-checkout-session", async (req, res) => {
+  try {
+    // const { cart, email } = req.body;
+    const { cart } = req.body;
+
+    const session = await stripe.checkout.sessions.create({
+      ui_mode: "embedded",
+      mode: "payment",
+      // customer_email: email,
+      line_items: cart.map((item) => ({
+        price_data: {
+          currency: "usd",
+          product_data: {
+            name: item.name,
+            images: item.image ? [item.image] : [],
+          },
+          unit_amount: item.price * 100, // ціна в центах
+        },
+        quantity: item.quantity,
+      })),
+      return_url: `${YOUR_DOMAIN}/return?session_id={CHECKOUT_SESSION_ID}`,
+    });
+
+    res.status(200).json({
+      success: true,
+      clientSecret: session.client_secret,
+      url: session.url,
+      session_id: session.id,
+    });
+  } catch (error) {
+    console.log(error, "error");
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.get("/session-status", async (req, res) => {
+  try {
+    const session = await stripe.checkout.sessions.retrieve(
+      req.query.session_id // потім з фронта витягне із адресної строки цей session_id
+    );
+
+    res.json({
+      success: true,
+      status: session.status,
+      email: session.customer_email,
+    });
+  } catch (error) {
+    console.log(error, "error");
+    res.json({ success: false, message: error.message });
+  }
+});
+
+///// End Stripe///////
 
 app.get("/", (req, res) => {
   res.send("API Working"); // покажеться на екрані, якщо зайти на http://localhost:4000/
