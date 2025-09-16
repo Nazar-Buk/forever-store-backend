@@ -112,7 +112,7 @@ app.post("/liqpay/embedded-pay", (req, res) => {
       description,
       order_id,
       sandbox: 1, // тестовий режим
-      paytypes: "card,liqpay",
+      paytypes: "card,liqpay,applepay,googlepay",
       result_url: `${frontendUrl}/thank-you`,
     };
 
