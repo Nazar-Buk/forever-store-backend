@@ -19,6 +19,7 @@ import productRouter from "./routes/productRoute.js";
 import categoryRouter from "./routes/categoryRoute.js";
 import stripeRoute from "./routes/stripeRoute.js";
 import liqpayRoute from "./routes/liqpayRoute.js";
+import tgBotRoute from "./routes/tgBotRoute.js";
 
 const allowOrigins = [
   "http://localhost:5173",
@@ -76,6 +77,7 @@ app.use("/api/product", productRouter);
 app.use("/api/category", categoryRouter);
 app.use("/", stripeRoute); // '/' -- поставив просто стлеш бо не хотів переробляти шляхи на фронті, хоча це не важко (щось таке можна додати сюди і на фронт /api/stripe)
 app.use("/", liqpayRoute); // '/' -- поставив просто стлеш бо не хотів переробляти шляхи на фронті, хоча це не важко (щось таке можна додати сюди і на фронт /api/liqpay)
+app.use("/api/tg-bot", tgBotRoute);
 
 app.get("/", (req, res) => {
   res.send("API Working"); // покажеться на екрані, якщо зайти на http://localhost:4000/
