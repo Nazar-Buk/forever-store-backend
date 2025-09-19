@@ -69,7 +69,7 @@ app.use(
 
 app.use(helmet()); // Безпека
 app.use(cookieParser()); // Читання cookie
-app.use(rateLimit({ windowMs: 15 * 60 * 100, max: 100 })); // Обмеження 100 запитів за 15 хв
+app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 1000 })); // Обмеження 1000 запитів за 15 хв
 
 //API Endpoints
 app.use("/api/user", userRouter); // /api/user/register,   /api/user/login,  /api/user/admin
