@@ -79,7 +79,6 @@ const updateProduct = async (req, res) => {
 
     if (imgForDelete && imgForDelete !== "[]") {
       const imagesToDelete = JSON.parse(imgForDelete);
-      console.log(imagesToDelete, "imagesToDelete");
 
       // Видалити всі зображення з Cloudinary
       await Promise.all(
@@ -91,31 +90,64 @@ const updateProduct = async (req, res) => {
       );
     }
 
+    let uploadedImagesData = [];
+
     if (updatedFields.images) {
       if (updatedFields.images === "[]") {
         updatedFields.images = JSON.parse(updatedFields.images);
       } else {
-        updatedFields.images = JSON.parse(updatedFields.images);
+        const parsedImages = JSON.parse(updatedFields.images);
+
+        if (uploadedImages.length) {
+          let fileIndex = 0;
+          // uploadedImagesData -- завантажені картинки зі слотами
+          uploadedImagesData = parsedImages
+            .map((img, ind) => {
+              if (img.file) {
+                const fileData = {
+                  file: uploadedImages[fileIndex],
+                  slot: ind,
+                };
+                fileIndex++;
+
+                return fileData;
+              }
+
+              return;
+            })
+            .filter((item) => item);
+        }
+        // ті каритинки що були, без завантажених картинок
+        updatedFields.images = parsedImages.filter((img) => !img.file);
       }
     }
 
-    if (uploadedImages.length) {
+    if (uploadedImagesData.length) {
+      // imagesData -- завантажені картинки перетворилися на url і public_id
       let imagesData = await Promise.all(
-        uploadedImages.map(async (item) => {
-          let result = await cloudinary.uploader.upload(item.path, {
+        uploadedImagesData.map(async (item) => {
+          let result = await cloudinary.uploader.upload(item.file.path, {
             resource_type: "image",
             folder: "productsForever", // productsForever папка де зберігаються фотки на cloudinary
-          }); // item.path --  бо консоль лог мені показує об'єкт в котрому є ключ path, цей об'єкт і є наша завантажена картинка
+          }); // item.file.path --  бо консоль лог мені показує об'єкт (наш файл) в котрому є ключ path, цей об'єкт і є наша завантажена картинка
           //  cloudinary отримає шлях до картинки і закине цю картинку в хмарку
+
           return {
             url: result.secure_url,
             public_id: result.public_id,
+            slot: item.slot,
           };
         })
       );
 
       if (updatedFields.images.length) {
-        updatedFields.images = [...updatedFields.images, ...imagesData];
+        // вставляю нові картинки в потрібні слоти
+        imagesData.forEach((item) => {
+          updatedFields.images.splice(item.slot, 0, {
+            url: item.url,
+            public_id: item.public_id,
+          });
+        });
       } else {
         updatedFields.images = imagesData;
       }
