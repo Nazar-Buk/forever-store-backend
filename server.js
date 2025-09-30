@@ -20,6 +20,7 @@ import categoryRouter from "./routes/categoryRoute.js";
 import stripeRoute from "./routes/stripeRoute.js";
 import liqpayRoute from "./routes/liqpayRoute.js";
 import tgBotRoute from "./routes/tgBotRoute.js";
+import cloudinaryUsageRoute from "./routes/cloudinaryUsageRoute.js";
 
 const allowOrigins = [
   "http://localhost:5173",
@@ -78,6 +79,7 @@ app.use("/api/category", categoryRouter);
 app.use("/", stripeRoute); // '/' -- поставив просто стлеш бо не хотів переробляти шляхи на фронті, хоча це не важко (щось таке можна додати сюди і на фронт /api/stripe)
 app.use("/", liqpayRoute); // '/' -- поставив просто стлеш бо не хотів переробляти шляхи на фронті, хоча це не важко (щось таке можна додати сюди і на фронт /api/liqpay)
 app.use("/api/tg-bot", tgBotRoute);
+app.use("/api", cloudinaryUsageRoute); // додав роут для отримання інформації по використанню cloudinary
 
 app.get("/", (req, res) => {
   res.send("API Working"); // покажеться на екрані, якщо зайти на http://localhost:4000/
