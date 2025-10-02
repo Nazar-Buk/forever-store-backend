@@ -18,12 +18,10 @@ const getMongoUsage = async (req, res) => {
         ? {
             value: parseFloat(GB.toFixed(2)),
             unit: "GB",
-            credits: parseFloat(GB.toFixed(2)),
           }
         : {
             value: parseFloat(MB.toFixed(3)),
             unit: "MB",
-            credits: parseFloat(GB.toFixed(2)),
           };
     };
 
@@ -32,16 +30,32 @@ const getMongoUsage = async (req, res) => {
       unit: "MB",
     };
 
-    const db = mongoose.connection.db;
-    const stats = await db.stats();
+    const adminDb = mongoose.connection.db.admin();
+    const dataBaseList = await adminDb.listDatabases();
 
-    const { db: dbName, dataSize, indexSize } = stats;
+    if (!dataBaseList) {
+      return res
+        .status(500)
+        .json({ success: false, message: "Data Bases Not Found!" });
+    }
 
-    const usedData = conversion(dataSize + indexSize);
+    const { databases } = dataBaseList;
+    const filteredDbs = databases.filter(
+      (item) => item.name !== "admin" && item.name !== "local"
+    );
 
-    res
-      .status(200)
-      .json({ success: true, mongoUsage: { limitData, dbName, usedData } });
+    const totalDbSize = filteredDbs.reduce((accumulator, current) => {
+      accumulator += current.sizeOnDisk;
+
+      return accumulator;
+    }, 0);
+
+    const usedData = { totalDbData: conversion(totalDbSize) };
+
+    res.status(200).json({
+      success: true,
+      mongoUsage: { limitData, usedData },
+    });
   } catch (error) {
     console.log(error, "error");
     res.status(500).json({ success: false, message: error.message });
