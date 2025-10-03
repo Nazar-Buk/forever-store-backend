@@ -56,7 +56,6 @@ const addProduct = async (req, res) => {
       sizes: JSON.parse(sizes), // переробляє із стрінги в масив, розпарсив)
       bestseller: bestseller === "true" ? true : false,
       images: imagesData,
-      date: Date.now(),
     };
 
     const product = new productModel(productData); // те з чим монго вміє працювати
@@ -240,13 +239,13 @@ const listProducts = async (req, res) => {
         sortOptions.price = -1; // Сортує за ціною по спаданню
         break;
       case "date_new":
-        sortOptions.date = -1; // Сортує за датою додавання (від нових до старих)
+        sortOptions.createdAt = -1; // Сортує за датою додавання (від нових до старих)
         break;
       case "date_old":
-        sortOptions.date = 1; // Сортує за датою додавання (від старих до нових)
+        sortOptions.createdAt = 1; // Сортує за датою додавання (від старих до нових)
         break;
       default:
-        sortOptions.date = -1; // Сортує за датою додавання (від нових до старих)
+        sortOptions.createdAt = -1; // Сортує за датою додавання (від нових до старих)
     }
 
     // Загальна кількість товарів
@@ -273,7 +272,7 @@ const bestsellersProducts = async (req, res) => {
     const bestsellersForSection = await productModel
       .find({ bestseller: true })
       .sort({
-        date: -1,
+        createdAt: -1,
       })
       .limit(5);
     // sort({createdAt: -1} -- отримаю найновіші бестселлери, .limit(5) -- тільки 5
@@ -298,7 +297,7 @@ const latestProducts = async (req, res) => {
   try {
     const latestProductsForSection = await productModel
       .find()
-      .sort({ date: -1 })
+      .sort({ createdAt: -1 })
       .limit(10);
 
     if (!latestProductsForSection.length) {
@@ -329,7 +328,7 @@ const relatedProducts = async (req, res) => {
         subCategory: subCategory,
         _id: { $ne: productId }, // Виключити поточний продукт, типу аля "не дорівнює"
       })
-      .sort({ date: -1 })
+      .sort({ createdAt: -1 })
       .limit(5);
 
     if (!relatedProductsForSection.length) {
