@@ -318,9 +318,6 @@ const latestProducts = async (req, res) => {
 const relatedProducts = async (req, res) => {
   try {
     const { category, subCategory, productId } = req.body;
-    console.log("category:", category);
-    console.log("subCategory:", subCategory);
-    console.log("productId:", productId);
 
     const relatedProductsForSection = await productModel
       .find({
