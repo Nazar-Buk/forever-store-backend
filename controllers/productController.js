@@ -15,6 +15,7 @@ const addProduct = async (req, res) => {
       category,
       subCategory,
       sizes,
+      isSizesAvailable,
       bestseller,
     } = req.body;
 
@@ -53,10 +54,15 @@ const addProduct = async (req, res) => {
       price: Number(price),
       category,
       subCategory,
-      sizes: JSON.parse(sizes), // переробляє із стрінги в масив, розпарсив)
+      // sizes: JSON.parse(sizes), // переробляє із стрінги в масив, розпарсив)
       bestseller: bestseller === "true" ? true : false,
       images: imagesData,
     };
+
+    // Додаємо sizes тільки якщо вони насправді потрібні
+    if (isSizesAvailable && sizes) {
+      productData.sizes = JSON.parse(sizes); // переробляє із стрінги в масив, розпарсив)
+    }
 
     const product = new productModel(productData); // те з чим монго вміє працювати
     await product.save();
