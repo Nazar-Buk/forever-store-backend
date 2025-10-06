@@ -15,7 +15,7 @@ const addCategory = async (req, res) => {
     if (isCategoryExist) {
       return res
         .status(400)
-        .json({ success: false, message: "Category already exist!" });
+        .json({ success: false, message: "Категорія вже існує!" });
     }
 
     let subCategoryData = [];
@@ -31,7 +31,7 @@ const addCategory = async (req, res) => {
       if (isDuplicates) {
         return res
           .status(400)
-          .json({ success: false, message: "Duplicates sub-categories!" });
+          .json({ success: false, message: "Під-категорія має дублікати!" });
       }
 
       subCategoryData = subCategory.map((item) => {
@@ -58,7 +58,7 @@ const addCategory = async (req, res) => {
 
     return res.json({
       success: true,
-      message: "Category added successfully!",
+      message: "Категорія додана успішно!",
       category,
     });
   } catch (error) {
@@ -106,7 +106,7 @@ const removeCategory = async (req, res) => {
     if (!oldCategoryData) {
       return res
         .status(404)
-        .json({ success: false, message: "Category Not Found!" });
+        .json({ success: false, message: "Категорія не знайдена!" });
     }
 
     await productModel.updateMany(
@@ -121,7 +121,7 @@ const removeCategory = async (req, res) => {
 
     await categoryModel.findByIdAndDelete(categoryId);
 
-    res.json({ success: true, message: "Category Removed!" });
+    res.json({ success: true, message: "Категорія видалена!" });
   } catch (error) {
     console.log(error, "error");
     res.status(500).json({ success: false, message: error.message });
@@ -139,7 +139,7 @@ const singleCategory = async (req, res) => {
     if (!category) {
       return res
         .status(404)
-        .json({ success: false, message: "Category Not Found!" });
+        .json({ success: false, message: "Категорію не знайдено!" });
     }
 
     res.json({ success: true, category });
@@ -161,13 +161,13 @@ const updateCategoryAndSubCategory = async (req, res) => {
     if (!updatedFields) {
       return res
         .status(404)
-        .json({ success: false, message: "Updated Fields Not Found!" });
+        .json({ success: false, message: "Оновлені поля незнайдено!" });
     }
 
     if (!categoryId) {
       return res
         .status(404)
-        .json({ success: false, message: "Category ID Not Found!" });
+        .json({ success: false, message: "ID Категорії не знайдено!" });
     }
 
     const oldCategoryData = await categoryModel.findById(categoryId);
@@ -175,7 +175,7 @@ const updateCategoryAndSubCategory = async (req, res) => {
     if (!oldCategoryData) {
       return res
         .status(404)
-        .json({ success: false, message: "Category Not Found!" });
+        .json({ success: false, message: "Категорію не знайдено!" });
     }
 
     const oldCategoryLabel = oldCategoryData.categoryLabel;
@@ -306,12 +306,12 @@ const updateCategoryAndSubCategory = async (req, res) => {
     if (!updatedCategory) {
       return res
         .status(404)
-        .json({ success: false, message: "Category Not Found!" });
+        .json({ success: false, message: "Категорію не знайдено!" });
     }
 
     res.json({
       success: true,
-      message: "Category Successfully Updated!",
+      message: "Категорія успішно оновлена!",
       updatedCategory,
     });
   } catch (error) {

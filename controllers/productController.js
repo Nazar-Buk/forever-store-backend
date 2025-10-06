@@ -67,7 +67,7 @@ const addProduct = async (req, res) => {
     const product = new productModel(productData); // те з чим монго вміє працювати
     await product.save();
 
-    res.json({ success: true, message: "Product added!" }); // {} -- сервер успішно обробив запит, але не має даних для передачі клієнту, тому {}.
+    res.json({ success: true, message: "Продукт додано!" }); // {} -- сервер успішно обробив запит, але не має даних для передачі клієнту, тому {}.
   } catch (error) {
     console.log(error);
     res.json({ success: false, message: error.message });
@@ -172,10 +172,10 @@ const updateProduct = async (req, res) => {
     //   { new: true }; // Повернути оновлений документ
 
     if (!updatedProduct) {
-      res.status(404).json({ success: false, message: "Product not found" });
+      res.status(404).json({ success: false, message: "Продукт не знайдено" });
     }
 
-    res.json({ success: true, message: "Product Updated!" });
+    res.json({ success: true, message: "Продукт оновлено!" });
   } catch (error) {
     console.log(error);
     res.json({ success: false, message: error.message });
@@ -286,7 +286,7 @@ const bestsellersProducts = async (req, res) => {
     if (!bestsellersForSection.length) {
       return res.status(404).json({
         success: false,
-        message: "Can't Find 'Bestsellers Products!'",
+        message: "Не знайдено продукти для 'Хіт продіжів'!",
       }); // так отримувати цю помилку на фронті --> error.response?.data?.message
     }
 
@@ -307,9 +307,10 @@ const latestProducts = async (req, res) => {
       .limit(10);
 
     if (!latestProductsForSection.length) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Can't Find 'Latest Products!'" });
+      return res.status(404).json({
+        success: false,
+        message: "Не знайдено продукти для 'Новинки!'",
+      });
     }
 
     res.json({ success: true, latestProductsForSection });
@@ -335,9 +336,10 @@ const relatedProducts = async (req, res) => {
       .limit(5);
 
     if (!relatedProductsForSection.length) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Can't Find 'Related Products!'" });
+      return res.status(404).json({
+        success: false,
+        message: "Не знайдено товари для 'Схожі товари!'",
+      });
     }
 
     res.json({ success: true, relatedProductsForSection });
@@ -355,7 +357,7 @@ const removeProduct = async (req, res) => {
     if (!product) {
       return res
         .status(404)
-        .json({ success: false, message: "Product Not Found!" });
+        .json({ success: false, message: "Продукт не знайдено!" });
     }
 
     // Видалити всі зображення з Cloudinary
@@ -369,7 +371,7 @@ const removeProduct = async (req, res) => {
 
     await productModel.findByIdAndDelete(req.body.id);
 
-    res.json({ success: true, message: "Product removed!" });
+    res.json({ success: true, message: "Продукт видалено!" });
   } catch (error) {
     console.log(error);
     res.json({ success: false, message: error.message });
@@ -388,7 +390,7 @@ const singleProduct = async (req, res) => {
     } else {
       res
         .status(404)
-        .json({ success: false, message: "404 Product Not Found!" });
+        .json({ success: false, message: "404 Продукт не знайдено!" });
     }
   } catch (error) {
     console.log(error);
@@ -403,7 +405,7 @@ const getAllProducts = async (req, res) => {
     if (!products.length) {
       return res
         .status(404)
-        .json({ success: false, message: "Products not found!" });
+        .json({ success: false, message: "Продукт не знайдено!" });
     }
 
     res.json({ success: true, products });
