@@ -36,7 +36,7 @@ const getMongoUsage = async (req, res) => {
     if (!dataBaseList) {
       return res
         .status(500)
-        .json({ success: false, message: "Data Bases Not Found!" });
+        .json({ success: false, message: "База даних незнайдена!" });
     }
 
     const { databases } = dataBaseList;

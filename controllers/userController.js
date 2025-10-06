@@ -17,7 +17,7 @@ const loginUser = async (req, res) => {
     if (!user) {
       return res
         .status(404)
-        .json({ success: false, message: "User does not exist!" });
+        .json({ success: false, message: "Користувач не існує!" });
     }
 
     const isMatch = await bcrypt.compare(password, user.password); // порівнюємо паролі
@@ -35,7 +35,7 @@ const loginUser = async (req, res) => {
     } else {
       return res
         .status(401)
-        .json({ success: false, message: "Invalid credentials!" });
+        .json({ success: false, message: "Неправильний логін або пароль!" });
     }
   } catch (error) {
     console.log(error);
@@ -52,21 +52,24 @@ const registerUser = async (req, res) => {
     const exists = await userModel.findOne({ email });
 
     if (exists) {
-      return res.json({ success: false, message: "User already exists!" });
+      return res.json({
+        success: false,
+        message: "Такий користувач вже існує!",
+      });
     }
 
     //перевірка емейлу та чи пароль надійний
     if (!validator.isEmail(email)) {
       return res.json({
         success: false,
-        message: "Please, enter a valid email!",
+        message: "Будь ласка напишіть правильний емейл!",
       });
     }
 
     if (password.length < 8) {
       return res.json({
         success: false,
-        message: "Please, enter a strong password!",
+        message: "Будь ласка, створіть надійний пароль!",
       });
     }
 
@@ -132,7 +135,7 @@ const adminLogin = async (req, res) => {
       const token = jwt.sign(email + password, process.env.JWT_SECRET);
       res.json({ success: true, token });
     } else {
-      res.json({ success: false, message: "Invalid credentials!" });
+      res.json({ success: false, message: "Неправильний логін або пароль!" });
     }
   } catch (error) {
     console.log(error);
@@ -149,7 +152,10 @@ const logoutUser = async (req, res) => {
       expires: new Date(0), // встановлюємо дату в минуле — кука автоматично видалиться
     });
 
-    res.json({ success: true, message: "Logged out successfully" });
+    res.json({
+      success: true,
+      message: "Ви успішно вийшли з облікового запису",
+    });
   } catch (error) {
     console.log(error, "error Logout");
     res.status(500).json({
@@ -163,13 +169,11 @@ const checkAuth = (req, res) => {
   const token = req.cookies.token;
 
   if (!token) {
-    return res
-      .status(401)
-      .json({
-        success: false,
-        isAuthenticated: false,
-        message: "Not authenticated",
-      });
+    return res.status(401).json({
+      success: false,
+      isAuthenticated: false,
+      message: "Неавторизовано!",
+    });
   }
 
   try {
@@ -179,13 +183,11 @@ const checkAuth = (req, res) => {
       .json({ success: true, isAuthenticated: true, userId: decoded.id });
   } catch (error) {
     console.log(error, "error");
-    return res
-      .status(401)
-      .json({
-        success: false,
-        isAuthenticated: false,
-        message: "Authentication failed",
-      });
+    return res.status(401).json({
+      success: false,
+      isAuthenticated: false,
+      message: "Не вдалося виконати вхід",
+    });
   }
 };
 
