@@ -28,7 +28,8 @@ const loginUser = async (req, res) => {
       res.cookie("token", token, {
         httpOnly: true, // Забороняє доступ до куки з JavaScript (XSS захист)
         secure: process.env.NODE_ENV === "production", // тільки по HTTPS у проді
-        sameSite: "Strict", // захист від CSRF
+        sameSite: "none",
+        // sameSite: "Strict", // захист від CSRF
         // maxAge: 7 * 24 * 60 * 60 * 1000, // кука буде жити 7 днів
       });
       res.status(200).json({ success: true, token });
@@ -90,7 +91,8 @@ const registerUser = async (req, res) => {
     res.cookie("token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production", // 🔐 лише для продакшну
-      sameSite: "strict",
+      sameSite: "none",
+      // sameSite: "strict",
     }); // { httpOnly: true } — опція, яка каже браузеру: "цю куку не можна читати через JavaScript".
 
     res.json({ success: true, token });
