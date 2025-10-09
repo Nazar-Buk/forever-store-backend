@@ -14,11 +14,15 @@ const categoryRouter = express.Router();
 
 categoryRouter.post("/add", addCategory);
 categoryRouter.get("/list", getCategories);
-categoryRouter.delete("/remove/:categoryId", adminAuth, removeCategory);
+categoryRouter.delete(
+  "/remove/:categoryId",
+  adminAuth(["admin", "super-admin"]),
+  removeCategory
+);
 categoryRouter.get("/single-category", singleCategory);
 categoryRouter.patch(
   "/update-category/:categoryId",
-  adminAuth,
+  adminAuth(["admin", "super-admin"]),
   updateCategoryAndSubCategory
 );
 

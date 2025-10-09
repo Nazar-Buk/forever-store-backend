@@ -17,7 +17,7 @@ const productRouter = express.Router();
 
 productRouter.post(
   "/add",
-  adminAuth,
+  adminAuth(["admin", "super-admin"]),
   // upload.fields([
   //   { name: "image1", maxCount: 1 },
   //   { name: "image2", maxCount: 1 },
@@ -29,7 +29,11 @@ productRouter.post(
   addProduct
 ); // upload.fields дозволяє завантажувати кілька фотографій
 // // upload.any можна завантажувати будь-яку кількість фотографій
-productRouter.post("/remove", adminAuth, removeProduct);
+productRouter.post(
+  "/remove",
+  adminAuth(["admin", "super-admin"]),
+  removeProduct
+);
 productRouter.post("/single", singleProduct);
 productRouter.get("/list", listProducts);
 productRouter.get("/bestsellers", bestsellersProducts);
@@ -37,7 +41,7 @@ productRouter.get("/latest-products", latestProducts);
 productRouter.post("/related", relatedProducts);
 productRouter.patch(
   "/update/:productId",
-  adminAuth,
+  adminAuth(["admin", "super-admin"]),
   upload.any(), // робить масив з файлів,
   updateProduct
 );
