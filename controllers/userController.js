@@ -123,26 +123,6 @@ const registerUser = async (req, res) => {
   }
 };
 
-// Route for admin login
-const adminLogin = async (req, res) => {
-  try {
-    const { email, password } = req.body;
-
-    if (
-      email === process.env.ADMIN_EMAIL &&
-      password === process.env.ADMIN_PASSWORD
-    ) {
-      const token = jwt.sign(email + password, process.env.JWT_SECRET);
-      res.json({ success: true, token });
-    } else {
-      res.json({ success: false, message: "Неправильний логін або пароль!" });
-    }
-  } catch (error) {
-    console.log(error);
-    res.json({ success: false, message: error.message });
-  }
-};
-
 // LogOut
 
 const logoutUser = async (req, res) => {
@@ -165,7 +145,7 @@ const logoutUser = async (req, res) => {
   }
 };
 
-const checkAuth = (req, res) => {
+const checkAuth = async (req, res) => {
   const token = req.cookies.token;
 
   if (!token) {
@@ -178,9 +158,22 @@ const checkAuth = (req, res) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    return res
-      .status(200)
-      .json({ success: true, isAuthenticated: true, userId: decoded.id });
+    const user = await userModel.findById(decoded.id);
+
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        isAuthenticated: false,
+        message: "Користувача не знайдено!",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      isAuthenticated: true,
+      userId: decoded.id,
+      role: user.role,
+    });
   } catch (error) {
     console.log(error, "error");
     return res.status(401).json({
@@ -191,4 +184,4 @@ const checkAuth = (req, res) => {
   }
 };
 
-export { loginUser, registerUser, adminLogin, logoutUser, checkAuth };
+export { loginUser, registerUser, logoutUser, checkAuth };
