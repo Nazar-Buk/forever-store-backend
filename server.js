@@ -30,6 +30,7 @@ const allowOrigins = [
   "https://buk-com.pp.ua",
   "https://forever-admin-frontend.onrender.com",
   "http://localhost:3000",
+  "https://admin.buk-com.pp.ua",
 ];
 
 // App config
