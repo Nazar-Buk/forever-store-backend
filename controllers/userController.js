@@ -175,6 +175,7 @@ const checkAuth = async (req, res) => {
       isAuthenticated: true,
       userId: decoded.id,
       role: user.role,
+      name: user.name,
     });
   } catch (error) {
     console.log(error, "error");
