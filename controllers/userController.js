@@ -27,8 +27,17 @@ const loginUser = async (req, res) => {
 
       res.cookie("token", token, {
         httpOnly: true, // Забороняє доступ до куки з JavaScript (XSS захист)
+
+        ////// Start Для проду
         secure: process.env.NODE_ENV === "production", // тільки по HTTPS у проді
         sameSite: "none",
+        ////// End Для проду
+
+        ////// Start Для локалки
+        // secure: false,
+        // sameSite: "strict",
+        ////// End Для Локалки
+
         // sameSite: "Strict", // захист від CSRF
         // maxAge: 7 * 24 * 60 * 60 * 1000, // кука буде жити 7 днів
       });
@@ -90,8 +99,16 @@ const registerUser = async (req, res) => {
 
     res.cookie("token", token, {
       httpOnly: true,
+      ////// Start Для проду
       secure: process.env.NODE_ENV === "production", // 🔐 лише для продакшну
       sameSite: "none",
+      ////// End Для проду
+
+      ////// Start Для Локалки
+      // secure: false,
+      // sameSite: "strict",
+      ////// End Для Локалки
+
       // sameSite: "strict",
     }); // { httpOnly: true } — опція, яка каже браузеру: "цю куку не можна читати через JavaScript".
 
@@ -187,4 +204,81 @@ const checkAuth = async (req, res) => {
   }
 };
 
-export { loginUser, registerUser, logoutUser, checkAuth };
+// get users
+const getUsers = async (req, res) => {
+  try {
+    const users = await userModel.find().select("-password");
+
+    res.status(200).json({ success: true, users });
+  } catch (error) {
+    console.log(error, "error");
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// update user role
+const updateUserRole = async (req, res) => {
+  try {
+    const { newRole } = req.body;
+    const { id } = req.params;
+
+    if (!newRole || !id) {
+      return res
+        .status(400)
+        .json({ success: false, message: "'newRole' or 'id' are absent!" });
+    }
+
+    const updatedUser = await userModel
+      .findByIdAndUpdate(id, { role: newRole }, { new: true })
+      .select("-password");
+
+    if (!updatedUser) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Користувача не знайдено!" });
+    }
+
+    res.status(200).json({
+      success: true,
+      updatedUser,
+      message: "Роль користувача оновлено!",
+    });
+  } catch (error) {
+    console.log(error, "error");
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// delete user
+const removeUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const deletedUser = await userModel.findByIdAndDelete(id);
+
+    if (!deletedUser) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Користувача не знайдено!" });
+    }
+
+    res.status(200).json({
+      success: true,
+      deletedUserId: id,
+      message: "Користувача успішно видалено!",
+    });
+  } catch (error) {
+    console.log(error, "error");
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export {
+  loginUser,
+  registerUser,
+  logoutUser,
+  checkAuth,
+  getUsers,
+  updateUserRole,
+  removeUser,
+};
