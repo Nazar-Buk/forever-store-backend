@@ -16,7 +16,7 @@ const cartItemSchema = new mongoose.Schema({
   },
   size: {
     type: String,
-    default: null, // якщо товар без розміру
+    default: "nosize", // якщо товар без розміру
   },
   // Ціна товару на момент додавання (щоб не залежала від майбутніх змін ціни) ТАК ТРЕБА РОБИТИ
   priceAtAdd: {

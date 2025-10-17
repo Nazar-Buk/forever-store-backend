@@ -4,7 +4,7 @@ import cartModel from "../models/cartModel.js";
 const addToCart = async (req, res) => {
   try {
     const userId = req.user._id;
-    const { productId, quantity = 1, size = null } = req.body;
+    const { productId, quantity = 1, size = "nosize" } = req.body;
 
     const product = await productModel.findById(productId);
 
@@ -23,7 +23,7 @@ const addToCart = async (req, res) => {
       cart = new cartModel({ userId, items: [] });
     }
 
-    // Перевіряємо, чи вже є такий товар у корзині з тим самим розміром, якщо товар немає розміру то буде null === null
+    // Перевіряємо, чи вже є такий товар у корзині з тим самим розміром, якщо товар немає розміру то буде 'nosize' === 'nosize'
     const existingItem = cart.items.find(
       (item) => item.productId.toString() === productId && item.size === size
     );
@@ -43,7 +43,9 @@ const addToCart = async (req, res) => {
 
     await cart.save();
 
-    res.status(200).json({ success: true, cart });
+    res
+      .status(200)
+      .json({ success: true, cart, message: "Продукт успішно доданий!" });
   } catch (error) {
     console.log(error, "error");
     res.status(500).json({ success: false, message: error.message });
@@ -55,7 +57,10 @@ const getCartData = async (req, res) => {
     const userId = req.user._id;
 
     // Знаходимо корзину користувача
-    let cart = await cartModel.findOne({ userId }).populate("items.productId");
+    let cart = await cartModel
+      .findOne({ userId })
+      .populate("items.productId")
+      .lean(); // ← повертає вже plain-об'єкт; це мені треба
     // populate("items.productId") – (заселити туди дані із іншої колекції, як людей в будинок) щоб повернути повну інформацію про продукт (назва, ціна, фото) разом із items.
     // тобто в ключ productId я запхаю всі дані (наспраді це силка на продукт, але на фронті ми отрмаємо ці дані) про продукт в котрого ІД ==> productId
 
@@ -74,7 +79,20 @@ const getCartData = async (req, res) => {
     // Оновлюємо totalPrice в документі (не обов'язково зберігати у базі)
     cart.totalPrice = totalPrice;
 
-    res.status(200).json({ success: true, cart });
+    // переробляю під нормальний формат, бо populate("items.productId") запхав ключ productId дані про продукт, а це плутає
+    cart.items = cart.items.map((item) => {
+      const { productId, ...rest } = item;
+
+      return {
+        ...rest,
+        product: item.productId,
+      };
+    });
+
+    res.status(200).json({
+      success: true,
+      cart,
+    });
   } catch (error) {
     console.log(error, "error");
     res.status(500).json({ success: false, message: error.message });
@@ -84,7 +102,7 @@ const getCartData = async (req, res) => {
 const updateCartItem = async (req, res) => {
   try {
     const userId = req.user._id;
-    const { productId, size = null, quantity } = req.body;
+    const { productId, size = "nosize", quantity } = req.body;
     // quantity: якщо 0 або менше — видалити товар, інакше — оновити кількість
 
     const cart = await cartModel.findOne({ userId });
@@ -166,18 +184,44 @@ const editCartProduct = async (req, res) => {
         .json({ success: false, message: "Корзина не знайдена!" });
     }
 
-    const itemIndex = cart.items.findIndex(
+    // Знаходимо індекс старого товару
+    const oldItemIndex = cart.items.findIndex(
       (item) => item.productId.toString() === productId && item.size === oldSize
     );
 
-    if (itemIndex === -1) {
+    if (oldItemIndex === -1) {
       return res
         .status(404)
         .json({ success: false, message: "Товар у корзині не знайдено!" });
     }
 
     // Оновлюємо розмір
-    cart.items[itemIndex].size = newSize;
+    cart.items[oldItemIndex].size = newSize;
+
+    //  Перевіряємо, чи тепер не з’явився дублікат (інший такий самий товар)
+    const allSameItems = cart.items.filter(
+      (item) => item.productId.toString() === productId && item.size === newSize
+    );
+
+    if (allSameItems.length > 1) {
+      // Якщо є дублікати — об'єднуємо їх у перший елемент
+      const totalQty = allSameItems.reduce((acc, curr) => {
+        return acc + curr.quantity;
+      }, 0);
+
+      // Беремо дані з першого товару, кількість оновлюємо
+      const mergedItem = { ...allSameItems[0], quantity: totalQty };
+
+      // Прибираємо дублікати і додаємо об'єднаний елемент
+      cart.items = [
+        ...cart.items.filter(
+          (item) =>
+            // ! (знак заперечення), тобто беремо усі елементи, які не відповідають цій умові.
+            !(item.productId.toString() === productId && item.size === newSize)
+        ),
+        mergedItem,
+      ];
+    }
 
     await cart.save();
 
