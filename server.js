@@ -23,6 +23,7 @@ import tgBotRoute from "./routes/tgBotRoute.js";
 import cloudinaryUsageRoute from "./routes/cloudinaryUsageRoute.js";
 import mongoUsageRoute from "./routes/mongoUsageRoute.js";
 import cartRouter from "./routes/cartRoute.js";
+import orderRouter from "./routes/orderRoute.js";
 
 const allowOrigins = [
   "http://localhost:5173",
@@ -85,6 +86,7 @@ app.use("/api/tg-bot", tgBotRoute);
 app.use("/api", cloudinaryUsageRoute); // додав роут для отримання інформації по використанню cloudinary
 app.use("/api", mongoUsageRoute);
 app.use("/api/cart", cartRouter);
+app.use("/api/order", orderRouter);
 
 app.get("/", (req, res) => {
   res.send("API Working"); // покажеться на екрані, якщо зайти на http://localhost:4000/
