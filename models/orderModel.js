@@ -34,7 +34,10 @@ const orderSchema = new mongoose.Schema(
       firstName: { type: String, required: true },
       lastName: { type: String, required: true },
       phone: { type: String, required: true },
-      postName: { type: String, required: true },
+      postName: {
+        optionLabel: { type: String, required: true },
+        optionValue: { type: String, required: true },
+      },
       region: { type: String, required: true },
       city: { type: String, required: true },
       postBranchName: { type: String, required: true },

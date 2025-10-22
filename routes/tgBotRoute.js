@@ -1,6 +1,9 @@
 import express from "express";
 import axios from "axios";
 
+import orderModel from "../models/orderModel.js";
+const frontendUrl = process.env.FRONTEND_URL;
+
 const useRouter = express.Router();
 
 // ЛОКАЛЬНІ ЛІНКИ не показуються на телеграмі
@@ -10,72 +13,64 @@ const CHAT_ID = process.env.TG_CHAT_ID;
 // === Ендпоінт для прийому форми ===
 useRouter.post("/send-tg-form", async (req, res) => {
   try {
-    const {
-      firstName,
-      lastName,
-      email,
-      street,
-      city,
-      state,
-      zipCode,
-      country,
-      phone,
-      orderId,
-      productsData,
-      price,
-    } = req.body;
+    const { orderId } = req.body;
 
-    const countryState = state || "Пусто";
-
-    if (
-      !firstName ||
-      !lastName ||
-      !email ||
-      !street ||
-      !city ||
-      !zipCode ||
-      !country ||
-      !phone ||
-      !orderId ||
-      !productsData ||
-      !price
-    ) {
-      return res.status(400).json({
-        success: false,
-        message:
-          "These values are required: firstName, lastName, email, street, city, zipCode, country, phone",
-      });
+    if (!orderId) {
+      return res
+        .status(400)
+        .json({ success: false, message: "orderId required" });
     }
 
-    const productList = productsData
-      .map((product, ind) => {
-        console.log(product, "product");
-        return `${ind + 1}. <a href="${product.link}">${product.name}</a>
-        <b>Кількість:</b> ${product.quantity}
+    const order = await orderModel
+      .findById(orderId)
+      .populate("items.product")
+      .populate({ path: "user", select: "-password -email" }) // select: "-password -email" — виключає ці поля з результату.
+      .lean();
+
+    if (!order) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Замовлення не знайдено!" });
+    }
+
+    const productList = order.items
+      .map((item, ind) => {
+        return `${ind + 1}. <a href="${frontendUrl}/product/${
+          item.product._id
+        }">${item.product.name}</a>
+      <b>Кількість:</b> ${item.quantity}
+      <b>Розмір:</b> ${item.size === "nosize" ? "Без розміру" : item.size}
       `;
       })
       .join("\n");
 
+    const {
+      totalPrice,
+      shippingAddress: {
+        firstName,
+        lastName,
+        phone,
+        city,
+        region,
+        postName,
+        postBranchName,
+      },
+    } = order;
+
     const text = `
-📩 <b>Нова заявка з сайту: BUK SKLAD</b>
+    📩 <b>Нова заявка з сайту: BUK SKLAD</b>
 
-👤 <b>Номер замовлення :</b> №${orderId} 
-👤 <b>Посилання на товар:</b> ${productList}
-👤 <b>Ціна замовлення:</b> ${price}$
-👤 <b>Посилання на замовлення:</b> Пізніше зроблю
-👤 <b>Ім'я:</b> ${firstName} ${lastName}
-📧 <b>Email:</b> ${email}
-🏠 <b>Адреса:</b> 
---- Вул: ${street},
---- Місто: ${city},
---- Штат: ${countryState},
---- Поштовий Індекс: ${zipCode},
---- Країна: ${country}
-📞 <b>Телефон:</b> ${phone}
-
-`;
-
-    console.log(text, "text");
+    👤 <b>Номер замовлення №:</b> ${orderId}
+    👤 <b>Посилання на товар:</b> ${productList}
+    👤 <b>Ціна замовлення:</b> ${totalPrice}грн
+    👤 <b>Ім'я:</b> ${firstName} ${lastName}
+    🏠 <b>Адреса:</b>
+    --- Назва Пошти: ${postName.optionLabel},
+    --- Область: ${region}
+    --- Населений пункт: ${city},
+    --- Відділення №: ${postBranchName},
+    📞 <b>Телефон:</b> ${phone}
+    `;
 
     // Відправка повідомлення у Telegram
     const response = await axios.post(
@@ -89,11 +84,14 @@ useRouter.post("/send-tg-form", async (req, res) => {
 
     // response.data.ok === true, якщо Telegram прийняв повідомлення
     if (response.data.ok) {
-      res
-        .status(200)
-        .json({ success: true, message: "Form was sent to Telegram" });
+      res.status(200).json({
+        success: true,
+        message: "Замовлення створено, наш менеджер вам зателефонує !",
+      });
     } else {
-      res.status(500).json({ success: false, error: "Form was not sended !" });
+      res
+        .status(500)
+        .json({ success: false, error: "Форму не відправлено в ТГ!" });
     }
   } catch (error) {
     console.error("❌ Error:", error.response?.data || error.message);

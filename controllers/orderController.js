@@ -148,7 +148,8 @@ const getAllOrders = async (req, res) => {
   try {
     const orders = await orderModel
       .find()
-      .populate("user") // підтягуємо дані користувача, якщо він є
+      .populate({ path: "user", select: "-password -email" }) // select: "-password -email" — виключає ці поля з результату.
+      // populate  підтягуємо дані користувача, якщо він є
       .populate("items.product") // підтягуємо дані продуктів
       .sort({ createdAt: -1 }) // новіші зверху
       .lean();
