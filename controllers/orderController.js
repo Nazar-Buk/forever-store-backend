@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import cartModel from "../models/cartModel.js";
 import orderModel from "../models/orderModel.js";
 import productModel from "../models/productModel.js";
@@ -158,15 +159,32 @@ const getUserOrders = async (req, res) => {
 //Отримуємо всі ордери
 const getAllOrders = async (req, res) => {
   try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit; // Обчислює skip — скільки товарів треба пропустити в базі
+
+    const { search } = req.query;
+
+    const filter = {};
+
+    if (search?.trim() && mongoose.Types.ObjectId.isValid(search)) {
+      filter._id = new mongoose.Types.ObjectId(search);
+    }
+
+    // Загальна кількість Ордерів
+    const totalCount = await orderModel.countDocuments(filter);
+
     const orders = await orderModel
-      .find()
+      .find(filter)
       .populate({ path: "user", select: "-password -email" }) // select: "-password -email" — виключає ці поля з результату.
       // populate  підтягуємо дані користувача, якщо він є
       // .populate("items.product") // підтягуємо дані продуктів
       .sort({ createdAt: -1 }) // новіші зверху
+      .skip(skip)
+      .limit(limit)
       .lean();
 
-    res.status(200).json({ success: false, orders });
+    res.status(200).json({ success: true, orders, totalCount });
   } catch (error) {
     console.log(error, "error");
     res.status(500).json({ success: false, message: error.message });
