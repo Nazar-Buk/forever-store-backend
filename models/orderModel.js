@@ -9,11 +9,14 @@ const orderSchema = new mongoose.Schema(
     // Масив товарів у замовленні
     items: [
       {
-        product: {
-          type: mongoose.Schema.Types.ObjectId, // зберігаємо _id продукту
-          ref: "product", // посилання на колекцію продуктів
-          required: true,
-        },
+        // product: {
+        //   type: mongoose.Schema.Types.ObjectId, // зберігаємо _id продукту
+        //   ref: "product", // посилання на колекцію продуктів
+        //   required: true,
+        // },
+        productId: { type: mongoose.Schema.Types.ObjectId }, // зберігаємо id продукту для можливих посилань
+        name: { type: String, required: true },
+        images: { type: Array },
         quantity: {
           type: Number, // кількість одиниць товару
           required: true,

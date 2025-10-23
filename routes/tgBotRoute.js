@@ -23,7 +23,7 @@ useRouter.post("/send-tg-form", async (req, res) => {
 
     const order = await orderModel
       .findById(orderId)
-      .populate("items.product")
+      // .populate("items.product")
       .populate({ path: "user", select: "-password -email" }) // select: "-password -email" — виключає ці поля з результату.
       .lean();
 
@@ -36,8 +36,8 @@ useRouter.post("/send-tg-form", async (req, res) => {
     const productList = order.items
       .map((item, ind) => {
         return `${ind + 1}. <a href="${frontendUrl}/product/${
-          item.product._id
-        }">${item.product.name}</a>
+          item.productId
+        }">${item.name}</a>
       <b>Кількість:</b> ${item.quantity}
       <b>Розмір:</b> ${item.size === "nosize" ? "Без розміру" : item.size}
       `;

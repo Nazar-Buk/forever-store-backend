@@ -13,9 +13,8 @@ const createOrder = async (req, res) => {
         .json({ success: false, message: "Адреса доставки обов’язкова" });
     }
 
-    const cart = await cartModel
-      .findOne({ userId })
-      .populate("items.productId");
+    const cart = await cartModel.findOne({ userId });
+    // .populate("items.productId");
 
     if (!cart || cart.items.length === 0) {
       return res.status(400).json({
@@ -24,12 +23,23 @@ const createOrder = async (req, res) => {
       });
     }
 
-    const orderItems = cart.items.map((item) => ({
-      product: item.productId._id,
-      quantity: item.quantity,
-      size: item.size,
-      priceAtAdd: item.productId.price,
-    }));
+    const orderItems = await Promise.all(
+      cart.items.map(async (item) => {
+        const product = await productModel.findById(item.productId);
+        if (!product) {
+          throw new Error(`Товар з id ${item.productId} не знайдено`);
+        }
+
+        return {
+          productId: item.productId,
+          name: product.name,
+          images: product.images,
+          priceAtAdd: product.price,
+          quantity: item.quantity,
+          size: item.size || "nosize",
+        };
+      })
+    );
 
     // Розрахунок загальної суми
     const totalPrice = orderItems.reduce(
@@ -94,6 +104,8 @@ const createGuestOrder = async (req, res) => {
 
         return {
           product: product._id,
+          name: product.name,
+          images: product.images,
           quantity: item.quantity,
           size: item.size || "nosize",
           priceAtAdd: product.price,
@@ -132,7 +144,7 @@ const getUserOrders = async (req, res) => {
 
     const orders = await orderModel
       .find({ user: userId })
-      .populate("items.product") // підтягуємо дані продуктів
+      // .populate("items.product") // підтягуємо дані продуктів
       .sort({ createdAt: -1 }) // новіші замовлення зверху
       .lean();
 
@@ -150,7 +162,7 @@ const getAllOrders = async (req, res) => {
       .find()
       .populate({ path: "user", select: "-password -email" }) // select: "-password -email" — виключає ці поля з результату.
       // populate  підтягуємо дані користувача, якщо він є
-      .populate("items.product") // підтягуємо дані продуктів
+      // .populate("items.product") // підтягуємо дані продуктів
       .sort({ createdAt: -1 }) // новіші зверху
       .lean();
 
