@@ -70,6 +70,23 @@ const getCartData = async (req, res) => {
         .json({ success: true, cart: { items: [], totalPrice: 0 } });
     }
 
+    // це треба щоб занати скільки товарів було до фільтрації, тобто якщо видалили продукти, а вони були в корзині
+    // мені то треба для повідомлення юзера що деякі товари були видалені
+    const oldCartProductsLength = cart.items.length;
+
+    // ✅ НОВЕ: Фільтруємо товари, яких вже нема у БД (productId === null)
+    const filteredItems = cart.items.filter((item) => item.productId);
+
+    // ✅ Якщо видалили хоч один товар — оновлюємо корзину в БД
+    if (filteredItems.length !== cart.items.length) {
+      cart.items = filteredItems;
+
+      await cartModel.updateOne(
+        { userId }, // знайти корзину цього користувача
+        { items: filteredItems } // оновити items на відфільтровані
+      );
+    }
+
     // Підрахунок загальної суми
     let totalPrice = 0;
     cart.items.forEach((item) => {
@@ -92,6 +109,10 @@ const getCartData = async (req, res) => {
     res.status(200).json({
       success: true,
       cart,
+      message:
+        filteredItems.length !== oldCartProductsLength
+          ? "Деякі товари були видалені з корзини, бо більше не доступні"
+          : undefined,
     });
   } catch (error) {
     console.log(error, "error");
@@ -232,4 +253,42 @@ const editCartProduct = async (req, res) => {
   }
 };
 
-export { addToCart, getCartData, updateCartItem, clearCart, editCartProduct };
+// Треба щоб видалені товари не залишалися в корзині в LocalStorage для корзини гостя
+const checkExistProducts = async (req, res) => {
+  try {
+    const { ids } = req.body; // масив _id продуктів
+
+    // Перевіряємо, які продукти ще є
+
+    // { _id: { $in: ids } } → знайти документи, _id яких є в масиві ids
+    // "_id" → повернути тільки поле _id, без інших даних
+    const products = await productModel
+      .find({ _id: { $in: ids } }, "_id")
+      .lean();
+
+    const existingIds = products.map((p) => p._id.toString());
+
+    res
+      .status(200)
+      .json({
+        success: true,
+        existingIds,
+        message:
+          ids.length !== existingIds.length
+            ? "Деякі товари були видалені з корзини, бо більше не доступні"
+            : undefined,
+      });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export {
+  addToCart,
+  getCartData,
+  updateCartItem,
+  clearCart,
+  editCartProduct,
+  checkExistProducts,
+};
