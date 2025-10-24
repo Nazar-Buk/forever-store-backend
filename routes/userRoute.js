@@ -7,8 +7,10 @@ import {
   getUsers,
   updateUserRole,
   removeUser,
+  updateUserData,
 } from "../controllers/userController.js";
 import adminAuth from "../middleware/adminAuth.js";
+import verifyUser from "../middleware/userAuth.js";
 
 const userRouter = express.Router();
 
@@ -20,5 +22,6 @@ userRouter.get("/check-auth", checkAuth);
 userRouter.get("/all-users", getUsers);
 userRouter.patch("/:id/role", adminAuth(["super-admin"]), updateUserRole);
 userRouter.delete("/:id", adminAuth(["super-admin"]), removeUser);
+userRouter.put("/update", verifyUser, updateUserData);
 
 export default userRouter;
