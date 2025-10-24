@@ -273,6 +273,60 @@ const removeUser = async (req, res) => {
   }
 };
 
+// update user
+const updateUserData = async (req, res) => {
+  try {
+    const userId = req.user._id; // користувач підставляється з verifyUser
+
+    const { name, oldPassword, newPassword } = req.body;
+
+    const user = await userModel.findById(userId);
+
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Користувача не знайдено!" });
+    }
+
+    //  Оновлення імені
+    if (name) {
+      user.name = name;
+    }
+
+    // 🟨 Зміна паролю
+    if (oldPassword && newPassword) {
+      const isMatch = await bcrypt.compare(oldPassword, user.password);
+
+      if (!isMatch) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Старий пароль невірний!" });
+      }
+
+      if (newPassword.length < 8) {
+        return res.status(400).json({
+          success: false,
+          message: "Новий пароль має бути мінімум 8 символів!",
+        });
+      }
+
+      const salt = await bcrypt.genSalt(10);
+      user.password = await bcrypt.hash(newPassword, salt);
+    }
+
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Дані успішно оновлено!",
+      updatedUser: { name: user.name, email: user.email },
+    });
+  } catch (error) {
+    console.log(error, "error");
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 export {
   loginUser,
   registerUser,
@@ -281,4 +335,5 @@ export {
   getUsers,
   updateUserRole,
   removeUser,
+  updateUserData,
 };
