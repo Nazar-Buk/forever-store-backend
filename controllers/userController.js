@@ -1,6 +1,8 @@
 import validator from "validator";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import crypto from "crypto";
+import nodemailer from "nodemailer";
 
 import userModel from "../models/userModel.js";
 
@@ -327,6 +329,67 @@ const updateUserData = async (req, res) => {
   }
 };
 
+const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Потрібен Email!" });
+    }
+
+    const user = await userModel.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "Користувача з таким email не знайдено!",
+      });
+    }
+
+    // Генеруємо токен
+    const token = crypto.randomBytes(32).toString("hex");
+    const expires = Date.now() + 15 * 60 * 1000; // 15 хвилин
+
+    // Зберігаємо токен та термін дії у користувача
+    user.resetPasswordToken = token;
+    user.resetPasswordExpires = expires;
+    await user.save();
+
+    // Налаштування Nodemailer для NIC.UA SMTP
+    const transporter = nodemailer.createTransport({
+      host: "mail.buk-com.pp.ua",
+      port: 587,
+      secure: false,
+      auth: {
+        // це логін та пароль від поштової скриньки
+        user: process.env.SMTP_USER, // наприклад support@buk-com.pp.ua
+        pass: process.env.SMTP_PASS,
+      },
+      // tls: { rejectUnauthorized: false }, // <- додати сюди для тесту
+    });
+
+    const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
+
+    await transporter.sendMail({
+      from: `"Buk Sklad" ${process.env.SMTP_USER} `,
+      to: user.email,
+      subject: "Відновлення пароля",
+      html: `<p>Щоб скинути пароль, перейдіть за посиланням нижче. Посилання дійсне 15 хвилин:</p>
+      <a href="${resetUrl}">${resetUrl}</a>`,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Лист для відновлення пароля відправлено на вашу пошту!",
+    });
+  } catch (error) {
+    console.log(error, "error");
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 export {
   loginUser,
   registerUser,
@@ -336,4 +399,5 @@ export {
   updateUserRole,
   removeUser,
   updateUserData,
+  forgotPassword,
 };

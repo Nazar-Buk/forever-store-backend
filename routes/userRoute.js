@@ -8,6 +8,7 @@ import {
   updateUserRole,
   removeUser,
   updateUserData,
+  forgotPassword,
 } from "../controllers/userController.js";
 import adminAuth from "../middleware/adminAuth.js";
 import verifyUser from "../middleware/userAuth.js";
@@ -23,5 +24,6 @@ userRouter.get("/all-users", getUsers);
 userRouter.patch("/:id/role", adminAuth(["super-admin"]), updateUserRole);
 userRouter.delete("/:id", adminAuth(["super-admin"]), removeUser);
 userRouter.put("/update", verifyUser, updateUserData);
+userRouter.post("/forgot-password", forgotPassword);
 
 export default userRouter;

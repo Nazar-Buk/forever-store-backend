@@ -7,6 +7,8 @@ const userSchema = new mongoose.Schema(
     password: { type: String, required: true },
     cartData: { type: Object, default: {} }, // default: {} — якщо значення не надається, за замовчуванням буде порожній об'єкт
     role: { type: String, default: "user" },
+    resetPasswordToken: { type: String },
+    resetPasswordExpires: { type: Date },
   },
   { timestamps: true, minimize: false }
 );
