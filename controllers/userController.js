@@ -7,7 +7,7 @@ import nodemailer from "nodemailer";
 import userModel from "../models/userModel.js";
 
 const createToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET);
+  return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "7d" });
 };
 
 // Route for user login
@@ -41,7 +41,7 @@ const loginUser = async (req, res) => {
         ////// End Для Локалки
 
         // sameSite: "Strict", // захист від CSRF
-        // maxAge: 7 * 24 * 60 * 60 * 1000, // кука буде жити 7 днів
+        maxAge: 7 * 24 * 60 * 60 * 1000, // кука буде жити 7 днів
       });
       res.status(200).json({ success: true, token });
     } else {
@@ -359,15 +359,15 @@ const forgotPassword = async (req, res) => {
 
     // Налаштування Nodemailer для NIC.UA SMTP
     const transporter = nodemailer.createTransport({
-      host: "mail.buk-com.pp.ua",
-      port: 587,
-      secure: false,
+      host: "smtp.gmail.com",
+      port: 465,
+      secure: true,
       auth: {
         // це логін та пароль від поштової скриньки
-        user: process.env.SMTP_USER, // наприклад support@buk-com.pp.ua
+        user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS,
       },
-      // tls: { rejectUnauthorized: false }, // <- додати сюди для тесту
+      // tls: { rejectUnauthorized: false }, // <- додати сюди для тесту, не знаю чи воно треба для локалки
     });
 
     const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
@@ -390,6 +390,55 @@ const forgotPassword = async (req, res) => {
   }
 };
 
+const resetPassword = async (req, res) => {
+  try {
+    const { token, newPassword } = req.body;
+
+    // Перевірка нового пароля
+    if (!token) {
+      return res.status(400).json({
+        success: false,
+        message: "Потрібен токен!",
+      });
+    }
+
+    // Перевірка нового пароля
+    if (!newPassword || newPassword.length < 8) {
+      return res.status(400).json({
+        success: false,
+        message: "Новий пароль обовʼязковий і має бути мінімум 8 символів",
+      });
+    }
+
+    const user = await userModel.findOne({
+      resetPasswordToken: token,
+      resetPasswordExpires: { $gt: Date.now() }, // токен ще дійсний
+    });
+
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: "Токен недійсний або прострочений!",
+      });
+    }
+
+    // Хешування нового пароля
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(newPassword, salt);
+
+    // Очищення токена
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+
+    await user.save();
+
+    res.json({ success: true, message: "Пароль успішно змінено!" });
+  } catch (error) {
+    console.log(error, "error");
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 export {
   loginUser,
   registerUser,
@@ -400,4 +449,5 @@ export {
   removeUser,
   updateUserData,
   forgotPassword,
+  resetPassword,
 };
