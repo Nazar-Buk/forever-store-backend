@@ -2,9 +2,18 @@ import validator from "validator";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
-import nodemailer from "nodemailer";
+import formData from "form-data";
+import Mailgun from "mailgun.js";
 
 import userModel from "../models/userModel.js";
+
+// Ініціалізація Mailgun
+const mailgun = new Mailgun(formData);
+const mg = mailgun.client({
+  username: "api",
+  key: process.env.MAILGUN_API_KEY, // твій Private API Key
+  url: "https://api.eu.mailgun.net",
+});
 
 const createToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "7d" });
@@ -355,29 +364,20 @@ const forgotPassword = async (req, res) => {
     // Зберігаємо токен та термін дії у користувача
     user.resetPasswordToken = token;
     user.resetPasswordExpires = expires;
-    await user.save();
 
-    // Налаштування Nodemailer для NIC.UA SMTP
-    const transporter = nodemailer.createTransport({
-      host: "smtp.gmail.com",
-      port: 465,
-      secure: true,
-      auth: {
-        // це логін та пароль від поштової скриньки
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
-      // tls: { rejectUnauthorized: false }, // <- додати сюди для тесту, не знаю чи воно треба для локалки
-    });
+    await user.save();
 
     const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
 
-    await transporter.sendMail({
-      from: `"Buk Sklad" ${process.env.SMTP_USER} `,
+    // Відправка листа через Mailgun
+    const response = await mg.messages.create(process.env.MAILGUN_DOMAIN, {
+      from: `Buk Sklad <no-reply@${process.env.MAILGUN_DOMAIN}>`,
       to: user.email,
       subject: "Відновлення пароля",
-      html: `<p>Щоб скинути пароль, перейдіть за посиланням нижче. Посилання дійсне 15 хвилин:</p>
-      <a href="${resetUrl}">${resetUrl}</a>`,
+      html: `
+        <p>Щоб скинути пароль, перейдіть за посиланням нижче (дійсне 15 хвилин):</p>
+        <a href="${resetUrl}">${resetUrl}</a>
+      `,
     });
 
     res.status(200).json({
