@@ -29,9 +29,10 @@ const allowOrigins = [
   "http://localhost:5173",
   "http://localhost:5174",
   "https://forever-store-mzej.onrender.com",
-  "https://buk-com.pp.ua",
   "https://forever-admin-frontend.onrender.com",
   "http://localhost:3000",
+
+  "https://buk-com.pp.ua",
   "https://admin.buk-com.pp.ua",
 ];
 
@@ -49,8 +50,15 @@ app.use(express.json());
 app.use(
   cors({
     origin: function (origin, callback) {
+      ///////////////////////////////////////////////////////
+      ///////////////////////////////////////////////////////
+      ///////////////////////////////////////////////////////
+
       // Якщо запит не має origin (наприклад, з Postman), дозволити
       if (!origin) return callback(null, true);
+      ///////////////////////////////////////////////////////
+      ///////////////////////////////////////////////////////
+      ///////////////////////////////////////////////////////
       // origin: function (...) — дозволяє вручну перевіряти, чи походить запит з дозволеного джерела.
 
       // Увага!!!
