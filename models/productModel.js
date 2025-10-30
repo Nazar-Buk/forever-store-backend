@@ -16,6 +16,8 @@ const productSchema = new mongoose.Schema(
     subCategory: { type: String, required: true },
     sizes: { type: Array },
     bestseller: { type: Boolean },
+    inStock: { type: Boolean, default: true },
+    code: { type: String, default: "empty" },
   },
   { timestamps: true }
 );

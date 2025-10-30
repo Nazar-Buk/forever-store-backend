@@ -17,6 +17,8 @@ const addProduct = async (req, res) => {
       sizes,
       isSizesAvailable,
       bestseller,
+      code,
+      inStock,
     } = req.body;
 
     const images = req.files;
@@ -57,6 +59,8 @@ const addProduct = async (req, res) => {
       // sizes: JSON.parse(sizes), // переробляє із стрінги в масив, розпарсив)
       bestseller: bestseller === "true" ? true : false,
       images: imagesData,
+      code,
+      inStock: inStock === "true" ? true : false,
     };
 
     // Додаємо sizes тільки якщо вони насправді потрібні
