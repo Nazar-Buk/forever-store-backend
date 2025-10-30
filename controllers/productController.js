@@ -3,6 +3,9 @@
 // які містять файли (наприклад, зображення чи документи).
 
 import { v2 as cloudinary } from "cloudinary";
+import PDFDocument from "pdfkit";
+import path from "path";
+import ExcelJS from "exceljs";
 import productModel from "../models/productModel.js"; // .js то піздєц як важливо!!! інакше не розуміє що за файд, то тобі не реакт))
 
 // func for add product
@@ -418,6 +421,198 @@ const getAllProducts = async (req, res) => {
   }
 };
 
+const generatePriceListPdf = async (req, res) => {
+  try {
+    const products = await productModel
+      .find({})
+      .sort({ category: 1, subCategory: 1, name: 1 });
+
+    // Якщо товарів немає — повертаємо 404
+    if (!products.length) {
+      return res.status(404).json({
+        success: false,
+        message: "Немає товарів для формування прайс-листа.",
+      });
+    }
+
+    // 2️⃣ Встановлюємо заголовки, щоб браузер сприймав відповідь як PDF-файл
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      'attachment; filename="price-list.pdf"'
+    );
+
+    // 3️⃣ Створюємо PDF-документ (A4, з відступами)
+    const doc = new PDFDocument({ margin: 40, size: "A4" });
+
+    // Підключаємо потік документа до відповіді (щоб одразу відправляти користувачу)
+    doc.pipe(res);
+
+    // ✅ Підключаємо шрифт із підтримкою кирилиці
+    const fontPath = path.join(process.cwd(), "fonts", "DejaVuSans.ttf");
+    doc.font(fontPath);
+
+    // 4️⃣ Заголовок документа
+    doc.fontSize(18).text("ПРАЙС-ЛИСТ BUK SKLAD", { align: "center" });
+    doc.moveDown(1); // робить відступ вниз на один рядок (по суті, вставляє порожній простір).
+    // Якщо поставити moveDown(2), буде більший відступ.
+
+    // 5️⃣ Змінні для відстеження поточної категорії та підкатегорії
+    let currentCategory = "";
+    let currentSubCategory = "";
+
+    products.forEach((product) => {
+      // Якщо змінилася категорія — виводимо її як заголовок
+      if (product.category !== currentCategory) {
+        currentCategory = product.category;
+        doc.moveDown(1);
+        doc
+          .fontSize(12)
+          .text(currentCategory.toUpperCase(), { underline: true });
+      }
+
+      // Якщо є підкатегорія і вона змінилася — показуємо її під категорією
+      if (product.subCategory && product.subCategory !== currentSubCategory) {
+        currentSubCategory = product.subCategory;
+        doc.moveDown(1);
+        doc.fontSize(12).text(`• ${currentSubCategory}`, { indent: 10 });
+      }
+
+      // Визначаємо статус наявності
+      const availability = product.inStock ? "В наявності" : "На замовлення";
+
+      // Якщо в товару є код — додаємо його в назву
+      const codeText = product.code ? product.code : "";
+
+      // Виводимо сам товар (з відступом)
+      doc
+        .fontSize(10)
+        .moveDown(1)
+        .text(
+          `- Назва: ${product.name} — (Код: ${codeText}) — Ціна: ${
+            product.price
+          } грн — Розмір: ${
+            product.sizes.length ? product.sizes : "немає"
+          } — Наявність: ${availability}`,
+          { indent: 20 }
+        );
+    });
+
+    // 7️⃣ Завершуємо створення документа і відправляємо його
+    doc.end();
+  } catch (error) {
+    console.log(error, "error");
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const generatePriceListExcel = async (req, res) => {
+  try {
+    // 1️⃣ Отримуємо товари з бази
+    const products = await productModel
+      .find({})
+      .sort({ category: 1, subCategory: 1, name: 1 });
+
+    if (!products.length) {
+      return res.status(404).json({
+        success: false,
+        message: "Немає товарів для формування прайс-листа.",
+      });
+    }
+
+    // 2️⃣ Створюємо нову книгу Excel
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Прайс-лист");
+
+    // 3️⃣ Додаємо заголовок
+    worksheet.mergeCells("A1:G1"); // об’єднує комірки від A1 до F1 в одну велику — тобто робить “шапку” на всю ширину таблиці.
+    worksheet.getCell("A1").value = "ПРАЙС-ЛИСТ BUK SKLAD"; // у цю об’єднану комірку вставляє текст — це назва документа
+    worksheet.getCell("A1").font = { size: 18, bold: true }; // робить шрифт 16 розміру і жирним.
+    worksheet.getCell("A1").alignment = { horizontal: "center" }; // вирівнює текст по центру горизонтально, щоб він красиво виглядав у верхній частині таблиці.
+
+    // 4️⃣ Додаємо шапку таблиці
+    worksheet.addRow([
+      "Назва товару",
+      "Код",
+      "Ціна (грн)",
+      "Категорія",
+      "Підкатегорія",
+      "Розмір",
+      "Наявність",
+    ]);
+
+    // Стилі для шапки
+    const headerRow = worksheet.getRow(2);
+    headerRow.eachCell((cell) => {
+      cell.font = { bold: true, size: 16 };
+      cell.alignment = { horizontal: "center" };
+      cell.border = {
+        top: { style: "thin" },
+        left: { style: "thin" },
+        bottom: { style: "thin" },
+        right: { style: "thin" },
+      };
+    });
+
+    // 5️⃣ Додаємо товари
+    products.forEach((product) => {
+      const availability = product.inStock ? "В наявності" : "На замовлення";
+      worksheet.addRow([
+        product.name,
+        product.code || "-",
+        product.price,
+        product.category,
+        product.subCategory || "-",
+        product.sizes.length ? product.sizes.join(", ") : "-", // нове поле
+        availability,
+      ]);
+    });
+
+    // Стиль звичайних рядків
+    worksheet.eachRow((row, rowNumber) => {
+      if (rowNumber > 2) {
+        row.eachCell((cell) => {
+          cell.font = { size: 14 };
+          cell.border = {
+            top: { style: "thin" },
+            left: { style: "thin" },
+            bottom: { style: "thin" },
+            right: { style: "thin" },
+          };
+          cell.alignment = { vertical: "middle", wrapText: true };
+        });
+      }
+    });
+
+    // 6️⃣ Автоматичне вирівнювання ширини колонок
+    worksheet.columns.forEach((column) => {
+      let maxLength = 0;
+      column.eachCell({ includeEmpty: true }, (cell) => {
+        const columnLength = cell.value ? cell.value.toString().length : 10;
+        if (columnLength > maxLength) maxLength = columnLength;
+      });
+      column.width = maxLength + 2;
+    });
+
+    // 7️⃣ Встановлюємо заголовки для відповіді (щоб файл завантажувався)
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    res.setHeader(
+      "Content-Disposition",
+      'attachment; filename="price-list.xlsx"'
+    );
+
+    // 8️⃣ Записуємо книгу у відповідь (стрімом)
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (error) {
+    console.log(error, "error");
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 export {
   addProduct,
   listProducts,
@@ -428,4 +623,6 @@ export {
   latestProducts,
   relatedProducts,
   getAllProducts,
+  generatePriceListPdf,
+  generatePriceListExcel,
 };

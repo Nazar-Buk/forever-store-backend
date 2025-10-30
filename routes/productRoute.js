@@ -9,6 +9,8 @@ import {
   latestProducts,
   relatedProducts,
   getAllProducts,
+  generatePriceListPdf,
+  generatePriceListExcel,
 } from "../controllers/productController.js";
 import upload from "../middleware/multer.js";
 import adminAuth from "../middleware/adminAuth.js";
@@ -46,5 +48,7 @@ productRouter.patch(
   updateProduct
 );
 productRouter.get("/all-products", getAllProducts);
+productRouter.get("/price-list/pdf", generatePriceListPdf);
+productRouter.get("/price-list/excel", generatePriceListExcel);
 
 export default productRouter;
