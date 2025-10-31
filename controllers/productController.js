@@ -452,6 +452,14 @@ const generatePriceListPdf = async (req, res) => {
     const fontPath = path.join(process.cwd(), "fonts", "DejaVuSans.ttf");
     doc.font(fontPath);
 
+    // 🆕 ✅ 1. Додано дату створення
+    const today = new Date();
+    const formattedDate = today.toLocaleDateString("uk-UA"); // формат 29.01.2025
+    doc
+      .fontSize(12)
+      .text(`Дата створення: ${formattedDate}`, { align: "right" });
+    doc.moveDown(1);
+
     // 4️⃣ Заголовок документа
     doc.fontSize(18).text("ПРАЙС-ЛИСТ BUK SKLAD", { align: "center" });
     doc.moveDown(1); // робить відступ вниз на один рядок (по суті, вставляє порожній простір).
@@ -524,13 +532,22 @@ const generatePriceListExcel = async (req, res) => {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet("Прайс-лист");
 
+    // 🆕 ✅ 1. Додаємо дату створення
+    const today = new Date();
+    const formattedDate = today.toLocaleDateString("uk-UA"); // формат 29.01.2025
+    worksheet.mergeCells("A1:G1");
+    worksheet.getCell("A1").value = `Дата створення: ${formattedDate}`;
+    worksheet.getCell("A1").font = { size: 12, italic: true };
+    worksheet.getCell("A1").alignment = { horizontal: "right" };
+
     // 3️⃣ Додаємо заголовок
-    worksheet.mergeCells("A1:G1"); // об’єднує комірки від A1 до F1 в одну велику — тобто робить “шапку” на всю ширину таблиці.
-    worksheet.getCell("A1").value = "ПРАЙС-ЛИСТ BUK SKLAD"; // у цю об’єднану комірку вставляє текст — це назва документа
-    worksheet.getCell("A1").font = { size: 18, bold: true }; // робить шрифт 16 розміру і жирним.
-    worksheet.getCell("A1").alignment = { horizontal: "center" }; // вирівнює текст по центру горизонтально, щоб він красиво виглядав у верхній частині таблиці.
+    worksheet.mergeCells("A2:G2"); // об’єднує комірки від A1 до F1 в одну велику — тобто робить “шапку” на всю ширину таблиці.
+    worksheet.getCell("A2").value = "ПРАЙС-ЛИСТ BUK SKLAD"; // у цю об’єднану комірку вставляє текст — це назва документа
+    worksheet.getCell("A2").font = { size: 18, bold: true }; // робить шрифт 16 розміру і жирним.
+    worksheet.getCell("A2").alignment = { horizontal: "center" }; // вирівнює текст по центру горизонтально, щоб він красиво виглядав у верхній частині таблиці.
 
     // 4️⃣ Додаємо шапку таблиці
+    worksheet.addRow([]);
     worksheet.addRow([
       "Назва товару",
       "Код",
@@ -542,7 +559,7 @@ const generatePriceListExcel = async (req, res) => {
     ]);
 
     // Стилі для шапки
-    const headerRow = worksheet.getRow(2);
+    const headerRow = worksheet.getRow(4);
     headerRow.eachCell((cell) => {
       cell.font = { bold: true, size: 16 };
       cell.alignment = { horizontal: "center" };
@@ -570,7 +587,7 @@ const generatePriceListExcel = async (req, res) => {
 
     // Стиль звичайних рядків
     worksheet.eachRow((row, rowNumber) => {
-      if (rowNumber > 2) {
+      if (rowNumber > 4) {
         row.eachCell((cell) => {
           cell.font = { size: 14 };
           cell.border = {
