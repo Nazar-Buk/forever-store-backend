@@ -104,7 +104,7 @@ const createGuestOrder = async (req, res) => {
         }
 
         return {
-          product: product._id,
+          productId: item.productId,
           name: product.name,
           images: product.images,
           quantity: item.quantity,
